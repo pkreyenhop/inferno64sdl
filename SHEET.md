@@ -116,7 +116,7 @@ Designed to stay smooth even on large maximized displays (e.g. 2560×1440 with 1
 - **Input Coalescing & Drag Capture**:
   - Coalesces mouse-wheel bursts (`DrainW`), scrollbar drag pointer streams (`DrainD`), and held keyboard repeats (`KbdLoop`).
   - Captures scrollbar drag mode (`vscroll` / `hscroll`) on button press so dragging continues smoothly even if the pointer drifts outside the 16 px scrollbar track.
-  - Works in tandem with `emu/MacOSX/win-sdl3.c`'s bounded SDL3 event-drain loop (32 events max per frame + motion coalescing) and `start-inferno.sh`'s 256 MB image pool (`-pimage=256m`).
+  - Works in tandem with `emu/port/win-sdl3.c`'s bounded SDL3 event-drain loop (32 events max per frame + motion coalescing) and `start-inferno.sh`'s 256 MB image pool (`-pimage=256m`).
 
 ---
 
@@ -261,7 +261,7 @@ On the reference 5-sheet financial planning workbook, this verifies **1,157 nume
 | `Apps/!Shell/!Run`, `Apps/!Acme/!Run` | Auto-mount `tcp!127.0.0.1!19900` onto `/mnt/sheet` when `Sheet` is running |
 | `appl/lib/zip.b` | Inferno ZIP library (patched for `Flocaldatadescr` data descriptors) |
 | `lib/wmsetup` | Start menu entry (`menu Sheet {wmapp /Apps/!Sheet}`) |
-| `emu/MacOSX/win-sdl3.c` | Native SDL3 backend with coalesced drag/present loop |
+| `emu/port/win-sdl3.c` | Shared native SDL3 backend (macOS & Linux) with coalesced drag/present loop |
 | `start-inferno.sh` | Launcher configured with `-pimage=256m` |
 
 ---

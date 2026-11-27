@@ -92,6 +92,7 @@ sudo apt-get install -y build-essential git libsdl3-dev libpulse-dev
 
 Set `SYSHOST=Linux` in `mkconfig`, then build and launch:
 ```sh
+sed -i 's/^SYSHOST=MacOSX/SYSHOST=Linux/' mkconfig
 export ROOT="$(pwd)"
 export objtype=amd64   # or arm64
 export PATH="$ROOT/Linux/$objtype/bin:$PATH"
