@@ -17,7 +17,8 @@ WmFire: module
 };
 
 MNT: con "/mnt/sheet";
-ADDR: con "tcp!127.0.0.1!19900";
+ADDR_FILE: con "/tmp/sheet.addr";
+DEF_ADDR: con "tcp!127.0.0.1!19900";
 
 FONT_UI:   con "/fonts/vera/verabd/verabd.14.font";
 FONT_BIG:  con "/fonts/vera/verabd/verabd.18.font";
@@ -110,27 +111,37 @@ fmt_pct(v: real): string
 }
 
 connecting  := 0;
+last_err    := "";
 
-connect_worker(force: int, donec: chan of int)
+get_sheet_addr(): string
+{
+	a := readfile(ADDR_FILE);
+	if(len a > 0)
+		return a;
+	return DEF_ADDR;
+}
+
+connect_worker(force: int, donec: chan of (int, string))
 {
 	if(!force && readfile(MNT + "/index") != nil){
-		donec <-= 1;
+		donec <-= (1, nil);
 		return;
 	}
 	sys->unmount(nil, MNT);
-	(ok, c) := sys->dial(ADDR, nil);
+	addr := get_sheet_addr();
+	(ok, c) := sys->dial(addr, nil);
 	if(ok < 0){
-		donec <-= 0;
+		donec <-= (0, sys->sprint("dial %s: %r", addr));
 		return;
 	}
 	if(sys->mount(c.dfd, nil, MNT, Sys->MREPL, nil) < 0){
-		donec <-= 0;
+		donec <-= (0, sys->sprint("mount %s: %r", MNT));
 		return;
 	}
 	if(readfile(MNT + "/index") != nil)
-		donec <-= 1;
+		donec <-= (1, nil);
 	else
-		donec <-= 0;
+		donec <-= (0, "sheet index unreadable");
 }
 
 timeout_worker(ms: int, toutc: chan of int)
@@ -139,7 +150,7 @@ timeout_worker(ms: int, toutc: chan of int)
 	toutc <-= 1;
 }
 
-start_connect(top: ref Tk->Toplevel, force: int, connc: chan of int)
+start_connect(top: ref Tk->Toplevel, force: int, connc: chan of (int, string))
 {
 	if(connecting)
 		return;
@@ -149,17 +160,17 @@ start_connect(top: ref Tk->Toplevel, force: int, connc: chan of int)
 	spawn connect_timed(force, connc);
 }
 
-connect_timed(force: int, connc: chan of int)
+connect_timed(force: int, connc: chan of (int, string))
 {
-	donec := chan of int;
+	donec := chan of (int, string);
 	toutc := chan of int;
 	spawn connect_worker(force, donec);
 	spawn timeout_worker(1500, toutc);
 	alt{
-	ok := <-donec =>
-		connc <-= ok;
+	res := <-donec =>
+		connc <-= res;
 	<-toutc =>
-		connc <-= 0;
+		connc <-= (0, "timed out waiting for Sheet");
 	}
 }
 
@@ -193,7 +204,10 @@ color_for_outcome(s: string): string
 refresh_outputs(top: ref Tk->Toplevel)
 {
 	if(!connected){
-		cmd(top, ".st configure -text {Not connected to /mnt/sheet — launch Sheet, then click Connect} -fg #b3261e");
+		msg := "Not connected to /mnt/sheet — launch Sheet, then click Connect";
+		if(len last_err > 0)
+			msg = "Not connected (" + last_err + ") — click Connect";
+		cmd(top, ".st configure -text {" + msg + "} -fg #b3261e");
 		cmd(top, "update");
 		return;
 	}
@@ -461,13 +475,14 @@ init(ctxt: ref Draw->Context, nil: list of string)
 	tkclient->onscreen(top, nil);
 	tkclient->startinput(top, "kbd" :: "ptr" :: nil);
 
-	connc := chan of int;
+	connc := chan of (int, string);
 	start_connect(top, 0, connc);
 
 	for(;;) alt{
-	ok := <-connc =>
+	(ok, cerr) := <-connc =>
 		connecting = 0;
 		connected = ok;
+		last_err = cerr;
 		if(connected){
 			load_from_sheet(top, 1);
 			run_sweep_spend(top);

@@ -2847,15 +2847,30 @@ handle_fsreq(srv: ref Styxserver, b: ref Book, cur_sheet: int, req: ref FsReq): 
 	return (b, cur_sheet, 0);
 }
 
+SHEET_ADDR_FILE: con "/tmp/sheet.addr";
+
 listen_cfd: ref Sys->FD;
 tcp_cfds: list of ref Sys->FD;
 fs_closing := 0;
 
-listen_sheetfs(addr: string, navc: chan of ref Navop, reqc: chan of ref FsReq)
+listen_sheetfs(navc: chan of ref Navop, reqc: chan of ref FsReq)
 {
-	(ok, c) := sys->announce(addr);
+	ok := -1;
+	c: Sys->Connection;
+	bound_addr := "";
+	for(port := 19900; port < 19920; port++){
+		addr := sys->sprint("tcp!127.0.0.1!%d", port);
+		(ok, c) = sys->announce(addr);
+		if(ok >= 0){
+			bound_addr = addr;
+			break;
+		}
+	}
 	if(ok < 0)
 		return;
+	afd := sys->create(SHEET_ADDR_FILE, Sys->OWRITE, 8r664);
+	if(afd != nil)
+		sys->fprint(afd, "%s\n", bound_addr);
 	listen_cfd = c.cfd;
 	for(;;){
 		(lok, nc) := sys->listen(c);
@@ -2881,6 +2896,7 @@ listen_sheetfs(addr: string, navc: chan of ref Navop, reqc: chan of ref FsReq)
 shutdown_sheetfs(mountpt: string)
 {
 	fs_closing = 1;
+	sys->remove(SHEET_ADDR_FILE);
 	if(listen_cfd != nil){
 		sys->fprint(listen_cfd, "hangup");
 		listen_cfd = nil;
@@ -2920,8 +2936,8 @@ start_sheetfs(mountpt: string): (ref Styxserver, chan of ref Navop, chan of ref 
 	spawn styx_loop(tchan, srv, reqc);
 	# Mount asynchronously so the main alt loop can service Tattach's Navop.Stat
 	spawn mount_sheetfs(fds[1], mountpt);
-	# Also listen on loopback TCP so already-open shells (with forked namespaces) can mount it
-	spawn listen_sheetfs("tcp!127.0.0.1!19900", navc, reqc);
+	# Also listen on loopback TCP (19900..19919) and publish address in /tmp/sheet.addr
+	spawn listen_sheetfs(navc, reqc);
 	return (srv, navc, reqc);
 }
 

@@ -1,3 +1,7 @@
 #!/dis/sh.dis
-mount -A tcp!127.0.0.1!19900 /mnt/sheet >[2]/dev/null
+if {ftest -f /tmp/sheet.addr} {
+	mount -A `{cat /tmp/sheet.addr} /mnt/sheet >[2]/dev/null
+} {
+	mount -A tcp!127.0.0.1!19900 /mnt/sheet >[2]/dev/null
+}
 wm/sh
