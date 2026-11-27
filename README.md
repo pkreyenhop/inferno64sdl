@@ -81,28 +81,17 @@ mk install
 
 ### Omarchy Linux / Arch Linux (`amd64` / `arm64` — Native SDL3 / Wayland)
 
-Install build and runtime dependencies via `pacman` (Omarchy already includes PipeWire with `pipewire-pulse`):
-```sh
-sudo pacman -S --needed base-devel git sdl3 libpulse
-```
-
-Clone, configure for Linux, build, and launch:
+Clone and run the automated build script (`--deps` installs `base-devel git sdl3 libpulse` via `pacman`, or `build-essential git libsdl3-dev libpulse-dev` on Debian/Ubuntu):
 ```sh
 git clone https://github.com/pkreyenhop/inferno64sdl.git
 cd inferno64sdl
 
-sed -i 's/^SYSHOST=MacOSX/SYSHOST=Linux/' mkconfig
-export ROOT="$(pwd)"
-export objtype=amd64   # Intel/AMD x86_64 (use arm64 on ARM Linux)
-export PATH="$ROOT/Linux/$objtype/bin:$PATH"
-
-./makemk.sh
-mk mkdirs
-mk install
-
+./build-linux.sh --deps            # Install dependencies + full build
 ./start-inferno.sh                 # Native SDL3/Wayland fullscreen
 ./start-inferno.sh -w -g1280x800   # Windowed mode
 ```
+
+After a `git pull`, rebuild quickly with `./build-linux.sh` (or `./build-linux.sh --dis-only` for Limbo-only updates).
 
 > **Omarchy / Hyprland notes**:
 > - SDL3 runs natively on Wayland (crisp HiDPI scaling, no XWayland needed).
@@ -111,12 +100,10 @@ mk install
 
 ### Debian / Ubuntu Linux (`amd64` / `arm64`)
 
-Install dependencies:
 ```sh
-sudo apt-get install -y build-essential git libsdl3-dev libpulse-dev
+./build-linux.sh --deps
+./start-inferno.sh
 ```
-
-Then follow the same `mkconfig`, `./makemk.sh`, `mk mkdirs`, and `mk install` steps above.
 
 ---
 
