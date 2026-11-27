@@ -35,6 +35,7 @@ WmSheet: module
 	init: fn(ctxt: ref Draw->Context, argv: list of string);
 };
 
+DEFAULT_DIR: con "/usr/inferno";
 DEFAULT_ODS: con "/usr/inferno/Financial_Planning_as_at_06Oct26_Sell_WLG_FIRE_in_Apr27.ods";
 
 VEMPTY, VNUM, VSTR, VNA, VERR: con iota;
@@ -2950,6 +2951,44 @@ ensure_visible(win: ref Window, sh: ref Sheet)
 	}
 }
 
+endswith(s, suf: string): int
+{
+	if(len s < len suf)
+		return 0;
+	return tolower(s[len s - len suf:]) == suf;
+}
+
+find_default_ods(): string
+{
+	(ok, nil) := sys->stat(DEFAULT_ODS);
+	if(ok == 0)
+		return DEFAULT_ODS;
+	fd := sys->open(DEFAULT_DIR, Sys->OREAD);
+	if(fd == nil)
+		return DEFAULT_ODS;
+	best := "";
+	best_mtime := 0;
+	for(;;){
+		(n, dirs) := sys->dirread(fd);
+		if(n <= 0)
+			break;
+		for(i := 0; i < n; i++){
+			if((dirs[i].mode & Sys->DMDIR) != 0)
+				continue;
+			name := dirs[i].name;
+			if(!endswith(name, ".ods"))
+				continue;
+			if(best == "" || dirs[i].mtime > best_mtime || (dirs[i].mtime == best_mtime && name < best)){
+				best = name;
+				best_mtime = dirs[i].mtime;
+			}
+		}
+	}
+	if(best != "")
+		return DEFAULT_DIR + "/" + best;
+	return DEFAULT_ODS;
+}
+
 init(ctxt: ref Draw->Context, argv: list of string)
 {
 	sys = load Sys Sys->PATH;
@@ -2975,7 +3014,7 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	testmode := 0;
 	servemode := 0;
 	mountpt := "/mnt/sheet";
-	path := DEFAULT_ODS;
+	path := "";
 	if(argv != nil){
 		for(a := tl argv; a != nil; a = tl a){
 			arg := hd a;
@@ -2990,6 +3029,8 @@ init(ctxt: ref Draw->Context, argv: list of string)
 				path = arg;
 		}
 	}
+	if(path == "")
+		path = find_default_ods();
 
 	(book, err) := load_book(path);
 	if(err != nil){
