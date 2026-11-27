@@ -564,13 +564,19 @@ openfile(fd: ref Sys->FD, cdf: ref CDFhdr): (ref Sys->FD, ref Fhdr, string)
 	if(err != nil)
 		return (nil, nil, err);
 
+	usize := f.uncomprsize;
+	csize := f.comprsize;
+	if(f.flags & Flocaldatadescr){
+		usize = cdf.uncomprsize;
+		csize = cdf.comprsize;
+	}
 	zfd: ref Sys->FD;
 	case f.comprmethod {
 	Mplain =>
-		zfd = pushbuf(fd, f.dataoff, int f.uncomprsize, cdf.crc32);
+		zfd = pushbuf(fd, f.dataoff, int usize, cdf.crc32);
 	Mdeflate =>
 		# xxx +1 is a hack to prevent "premature end of stream" from our inflate.  is our inflate broken or is it info-zip 3.0?
-		zfd = pushfilter(fd, f.dataoff, 1+int f.comprsize, cdf.crc32);
+		zfd = pushfilter(fd, f.dataoff, 1+int csize, cdf.crc32);
 	* =>
 		return (nil, nil, sprint("compression method %q not supported", comprmethod(f.comprmethod)));
 	}

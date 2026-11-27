@@ -51,6 +51,7 @@ menu Acme			{wmapp /Apps/!Acme}
 menu Edit			{wmapp /Apps/!Edit}
 menu Charon			{wmapp /Apps/!Web}
 menu NetSurf			{wmrun wm/netsurf}
+menu Sheet			{wmapp /Apps/!Sheet}
 menu Manual			{wmapp /Apps/!Manual}
 menu Apps			{wmrun wm/filer /Apps}
 menu Files			{if {ftest -d $home} {wmapp /Apps/!Filer $home} {wmapp /Apps/!Filer /}}

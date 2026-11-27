@@ -425,15 +425,15 @@ sdl3_mainloop(void)
 	pthread_mutex_unlock(&sdl_mu);
 
 	for(;;){
+		int force_present = 0;
+		int have_motion = 0;
+		int nevents = 0;
+
 		if(!SDL_WaitEvent(&ev))
 			continue;
 
 		do {
 			if(ev.type == sdl_ev_wakeup){
-				apply_clipboard();
-				apply_cursor();
-				apply_warp();
-				present_framebuffer();
 				continue;
 			}
 
@@ -446,17 +446,18 @@ sdl3_mainloop(void)
 			case SDL_EVENT_WINDOW_EXPOSED:
 			case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 			case SDL_EVENT_WINDOW_RESIZED:
-				present_framebuffer();
+				force_present = 1;
 				break;
 
 			case SDL_EVENT_MOUSE_MOTION:
 				map_mouse_coords(ev.motion.x, ev.motion.y, &mouse_x, &mouse_y);
-				mousetrack(mouse_buttons, mouse_x, mouse_y, 0);
+				have_motion = 1;
 				break;
 
 			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				map_mouse_coords(ev.button.x, ev.button.y, &mouse_x, &mouse_y);
 				mouse_buttons |= sdl_button_mask(ev.button.button, SDL_GetModState());
+				have_motion = 0;
 				mousetrack(mouse_buttons, mouse_x, mouse_y, 0);
 				break;
 
@@ -466,10 +467,15 @@ sdl3_mainloop(void)
 					mouse_buttons &= ~(1 | 2 | 4);
 				else
 					mouse_buttons &= ~sdl_button_mask(ev.button.button, 0);
+				have_motion = 0;
 				mousetrack(mouse_buttons, mouse_x, mouse_y, 0);
 				break;
 
 			case SDL_EVENT_MOUSE_WHEEL:
+				if(have_motion){
+					have_motion = 0;
+					mousetrack(mouse_buttons, mouse_x, mouse_y, 0);
+				}
 				if(ev.wheel.y > 0){
 					mousetrack(mouse_buttons | 8, mouse_x, mouse_y, 0);
 					mousetrack(mouse_buttons, mouse_x, mouse_y, 0);
@@ -487,14 +493,17 @@ sdl3_mainloop(void)
 				handle_textinput(ev.text.text);
 				break;
 			}
-		} while(SDL_PollEvent(&ev));
+		} while(++nevents < 32 && SDL_PollEvent(&ev));
 
-		/* Coalesce any pending flush/cursor/clipboard updates */
+		if(have_motion)
+			mousetrack(mouse_buttons, mouse_x, mouse_y, 0);
+
+		/* Coalesce all pending flush/cursor/clipboard updates into one present */
 		apply_clipboard();
 		apply_cursor();
 		apply_warp();
 		pthread_mutex_lock(&dirty_mu);
-		if(dirty_flag){
+		if(dirty_flag || force_present){
 			pthread_mutex_unlock(&dirty_mu);
 			present_framebuffer();
 		}else{
@@ -547,10 +556,13 @@ flushmemscreen(Rectangle r)
 	if(r.min.x >= r.max.x || r.min.y >= r.max.y)
 		return;
 
+	int need_wake = 0;
+
 	pthread_mutex_lock(&dirty_mu);
 	if(!dirty_flag){
 		dirty_rect = r;
 		dirty_flag = 1;
+		need_wake = 1;
 	}else{
 		if(r.min.x < dirty_rect.min.x) dirty_rect.min.x = r.min.x;
 		if(r.min.y < dirty_rect.min.y) dirty_rect.min.y = r.min.y;
@@ -559,7 +571,8 @@ flushmemscreen(Rectangle r)
 	}
 	pthread_mutex_unlock(&dirty_mu);
 
-	push_wakeup();
+	if(need_wake)
+		push_wakeup();
 }
 
 void

@@ -34,7 +34,7 @@ case "${1:-}" in
         ;;
     --windowed|-w)
         shift
-        INFERNO_FULLSCREEN=0 exec "$EMU" -r "$ROOT" "$@" /dis/wm/wm.dis
+        INFERNO_FULLSCREEN=0 exec "$EMU" -pimage=256m -r "$ROOT" "$@" /dis/wm/wm.dis
         ;;
     --help|-h)
         cat <<EOF
@@ -64,9 +64,9 @@ EOF
         done
 
         if [ "$HAS_GEOM" -eq 1 ]; then
-            INFERNO_FULLSCREEN=0 exec "$EMU" -r "$ROOT" "$@" /dis/wm/wm.dis
+            INFERNO_FULLSCREEN=0 exec "$EMU" -pimage=256m -r "$ROOT" "$@" /dis/wm/wm.dis
         else
-            INFERNO_FULLSCREEN=1 exec "$EMU" -r "$ROOT" "$@" /dis/wm/wm.dis
+            INFERNO_FULLSCREEN=1 exec "$EMU" -pimage=256m -r "$ROOT" "$@" /dis/wm/wm.dis
         fi
         ;;
 esac
