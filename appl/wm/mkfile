@@ -28,12 +28,14 @@ TARG=\
 	edit.dis\
 	filename.dis\
 	filer.dis\
+	fire.dis\
 	getauthinfo.dis\
 	keyboard.dis\
 	logon.dis\
 	logwindow.dis\
 	man.dis\
 	mand.dis\
+	mandelbrot.dis\
 	mash.dis\
 	memory.dis\
 ##	mpeg.dis\
@@ -53,6 +55,7 @@ TARG=\
 	samtk.dis\
 	sendmail.dis\
 	sh.dis\
+	sheet.dis\
 	smenu.dis\
 	snake.dis\
 	stopwatch.dis\

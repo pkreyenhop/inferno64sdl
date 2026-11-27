@@ -70,6 +70,7 @@ TARG=\
 	export.dis\
 	fc.dis\
 	fcp.dis\
+	fib.dis\
 	fmt.dis\
 	fortune.dis\
 	freq.dis\
