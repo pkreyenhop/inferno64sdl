@@ -62,20 +62,16 @@ cd inferno64sdl
 
 ### macOS (Apple Silicon)
 
-Install dependencies via Homebrew:
+Clone and run the automated build script (`--deps` installs `sdl3 libpng jpeg-turbo pkg-config bison` via Homebrew):
 ```sh
-brew install sdl3 libpng jpeg-turbo pkg-config bison
+git clone https://github.com/pkreyenhop/inferno64sdl.git
+cd inferno64sdl
+
+./build-macos.sh --deps            # Install Homebrew deps + full build
+./start-inferno.sh                 # Native SDL3 fullscreen
 ```
 
-Bootstrap `mk` and build Inferno:
-```sh
-export ROOT="$(pwd)"
-export objtype=arm64
-export PATH="$ROOT/MacOSX/$objtype/bin:$PATH"
-./makemk.sh
-mk mkdirs
-mk install
-```
+After a `git pull`, rebuild quickly with `./build-macos.sh` (or `--dis-only` / `--emu-only`).
 
 > **Note on third-party static libraries**: `libdoom.a` (from [ozkl/doomgeneric](https://github.com/ozkl/doomgeneric)), `libnetsurf.a` (from `netsurf-all-3.11`), and `lib/doom/freedoom1.wad` (from [Freedoom](https://github.com/freedoom/freedoom/releases)) are excluded from git via `.gitignore` and should be built/placed in `MacOSX/arm64/lib/` and `lib/doom/` when building from a fresh clone (or remove `doom` / `netsurf` from `emu/MacOSX/emu` and `emu/MacOSX/mkfile` for a minimal build).
 
