@@ -31,6 +31,8 @@ OFILES=\
 	string.$O\
 	sqlite.$O\
 	sqlite3.$O\
+	doom.$O\
+	netsurf.$O\
 	tls.$O\
 
 
@@ -52,6 +54,8 @@ MODULES=\
 	../module/ipints.m\
 	../module/crypt.m\
 	../module/sqlite.m\
+	../module/doom.m\
+	../module/netsurf.m\
 	../module/tls.m\
 	keyringif.m\
 
@@ -96,6 +100,12 @@ keyringif.h:D:	$MODULES keyringif.m
 sqlitemod.h:D: ../module/sqlite.m
 	rm -f $target && limbo -t Sqlite -I../module ../module/sqlite.m > $target
 
+doommod.h:D: ../module/doom.m
+	rm -f $target && limbo -t Doom -I../module ../module/doom.m > $target
+
+netsurfmod.h:D: ../module/netsurf.m
+	rm -f $target && limbo -t NetSurf -I../module ../module/netsurf.m > $target
+
 tlsmod.h:D:	$MODULES
 	rm -f $target && limbo -t Tls -I../module ../module/runt.m > $target
 
@@ -116,6 +126,8 @@ loader.$O:	loadermod.h
 freetype.$O:	freetypemod.h $ROOT/include/freetype.h
 math.$O:	$ROOT/include/mathi.h
 sqlite.$O:	sqlitemod.h
+doom.$O:	doommod.h
+netsurf.$O:	netsurfmod.h
 tls.$O:		tlsmod.h runt.h
 
 das-spim.c:N:	das-mips.c

@@ -369,3 +369,17 @@ os/pc64/forth.h
 .env
 lib/dict
 lib/sshkeys
+
+# MacOSX build outputs & generated headers
+/MacOSX/*/bin/*
+/MacOSX/*/lib/*
+/libinterp/doommod.h
+/libinterp/netsurfmod.h
+/dis/**/*.sbl
+
+# Third-party engine trees & WAD binaries
+/libdoom/
+/libnetsurf/
+/lib/doom/*.wad
+.default.cfg
+.savegame/

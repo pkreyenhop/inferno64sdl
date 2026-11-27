@@ -40,7 +40,8 @@ init(mods : ref Dat->Mods)
 		acme->acmectxt = wmclient->makedrawcontext();
 	display = (acme->acmectxt).display;
 	win = wmclient->window(acme->acmectxt, "Acme", Wmclient->Appl);
-	wmclient->win.reshape(((0, 0), (win.displayr.size().div(2))));
+	sz := win.displayr.size();
+	wmclient->win.reshape(((0, 0), (sz.x * 72 / 100, sz.y * 85 / 100)));
 	cmouse = chan of ref Draw->Pointer;
 	ckeyboard = win.ctxt.kbd;
 	wmclient->win.onscreen("place");

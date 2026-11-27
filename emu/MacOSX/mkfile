@@ -1,0 +1,64 @@
+SYSTARG=MacOSX
+<../../mkconfig
+SYSTARG=MacOSX
+
+#Configurable parameters
+
+CONF=emu			#default configuration
+CONFLIST=emu
+CLEANCONFLIST=
+
+INSTALLDIR=$ROOT/$SYSTARG/$OBJTYPE/bin	#path of directory where kernel is installed
+
+#end configurable parameters
+
+<$ROOT/mkfiles/mkfile-$SYSTARG-$OBJTYPE	#set vars based on target system
+
+<| $SHELLNAME ../port/mkdevlist $CONF	#sets $IP, $DEVS, $PORT, $LIBS
+
+OBJ=\
+	asm-$OBJTYPE.$O\
+	os.$O\
+	$CONF.root.$O\
+	lock.$O\
+	$DEVS\
+	$PORT\
+
+LIBNAMES=${LIBS:%=lib%.a}
+
+HFILES=\
+
+CFLAGS='-DROOT="'$ROOT'"'\
+	'-DOBJTYPE="'$OBJTYPE'"'\
+	-DEMU -I. -I../port\
+	-I$ROOT/$SYSTARG/$OBJTYPE/include\
+	-I$ROOT/include -I$ROOT/libinterp\
+	$CTHREADFLAGS $CFLAGS $EMUOPTIONS\
+	-I/opt/homebrew/include
+
+KERNDATE=`{$NDATE}
+
+LDFLAGS=$LDFLAGS -L/opt/homebrew/lib -L/opt/homebrew/opt/libpng/lib -L/opt/homebrew/opt/jpeg-turbo/lib -Wl,-rpath,/opt/homebrew/lib -Wl,-rpath,/opt/homebrew/opt/libpng/lib -Wl,-rpath,/opt/homebrew/opt/jpeg-turbo/lib
+
+SYSLIBS= \
+	$ROOT/$SYSTARG/$OBJTYPE/lib/libdoom.a\
+	$ROOT/$SYSTARG/$OBJTYPE/lib/libnetsurf.a\
+	-lcurl -lpng -ljpeg -lexpat -liconv -lz\
+	-lm -lSDL3\
+	-lpthread\
+	-framework CoreFoundation\
+	-framework IOKit
+
+default:V:	$O.$CONF
+
+$O.$CONF:	$OBJ $CONF.c $CONF.root.h $LIBNAMES
+	$CC $CFLAGS '-DKERNDATE='$KERNDATE $CONF.c
+	$LD $LDFLAGS -o $target $OBJ $CONF.$O $LIBFILES $SYSLIBS
+
+install:V: $O.$CONF
+	rm -f $INSTALLDIR/$CONF && cp $O.$CONF $INSTALLDIR/$CONF
+
+<../port/portmkfile
+
+devfs.$O:	../port/devfs-posix.c
+devds.$O:	../port/devds.c

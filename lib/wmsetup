@@ -44,10 +44,13 @@ fn cd {
 
 plumber -v /lib/plumbing >/chan/wmstdout >[2=1]
 wmrun wm/pinboard
+wmapp /Apps/!Acme
+wmapp /Apps/!Shell
 menu Shell			{wmapp /Apps/!Shell}
 menu Acme			{wmapp /Apps/!Acme}
 menu Edit			{wmapp /Apps/!Edit}
 menu Charon			{wmapp /Apps/!Web}
+menu NetSurf			{wmrun wm/netsurf}
 menu Manual			{wmapp /Apps/!Manual}
 menu Apps			{wmrun wm/filer /Apps}
 menu Files			{if {ftest -d $home} {wmapp /Apps/!Filer $home} {wmapp /Apps/!Filer /}}
@@ -65,6 +68,7 @@ menu Misc			'Clock'			{wmapp /Apps/!Clock}
 menu Misc			'Calculator'		{wmapp /Apps/!Calc}
 menu Misc			'Calendar'		{wmapp /Apps/!Calendar}
 menu Misc			'Stopwatch'		{wmapp /Apps/!Stopwatch}
+menu Games			'Doom'			{wmrun wm/doom}
 menu Games			'Tetris'			{wmapp /Apps/!Tetris}
 menu Games			'Bounce'			{wmapp /Apps/!Bounce}
 menu Games			'Snake'			{wmapp /Apps/!Snake}
@@ -74,5 +78,7 @@ menu Games			'Connect4'		{wmapp /Apps/Connect4}
 menu Games			'Cards'			{wmapp /Apps/!Cards}
 #menu Games			'Game client'		{wmrun games/gameclient >/dev/null >[2=1]}
 #menu Games			'Game client (local)'	{wmrun games/gameclient -l > /dev/null >[2=1]}
+menu ''	''
+menu Exit			{echo halt > /dev/sysctl}
 
 if {ftest -f $home/lib/wmsetup} {run $home/lib/wmsetup} {}

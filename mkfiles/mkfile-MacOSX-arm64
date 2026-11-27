@@ -1,0 +1,46 @@
+TARGMODEL=	Posix
+TARGSHTYPE=	sh
+CPUS=		arm64
+
+O=		o
+OS=		o
+
+AR=		ar
+ARFLAGS=	ruvs
+A=		a
+
+AS=		cc -c
+ASFLAGS=
+
+CC=		cc -c
+COPTFLAGS=	-O2
+CDEBUGFLAGS=	-g
+CTHREADFLAGS=
+CFLAGS=		-arch arm64\
+		-Wno-deprecated-declarations -Wuninitialized -Wunused-variable -Wreturn-type -Wno-four-char-constants -Wno-unknown-pragmas\
+		-Wno-main-return-type\
+		-Wno-logical-op-parentheses\
+		-Wno-constant-conversion -Wno-bitwise-op-parentheses -Wno-unused-function\
+		-Wno-shift-op-parentheses -Wno-dangling-else\
+		-Wno-parentheses\
+		-Wno-switch\
+		-Wno-tautological-compare\
+		-Wno-string-plus-int\
+		-Wno-implicit-function-declaration\
+		-Wno-implicit-int\
+		-Wno-incompatible-function-pointer-types\
+		-Wno-int-conversion\
+		-pipe\
+		-fno-strict-aliasing\
+		-I$ROOT/MacOSX/arm64/include\
+		-I$ROOT/include\
+		$COPTFLAGS $CDEBUGFLAGS
+
+ANSICPP=
+LD=		cc -arch arm64
+LDFLAGS=
+
+SYSLIBS=	-lm
+
+YACC=		iyacc
+YFLAGS=		-d

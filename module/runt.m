@@ -8,4 +8,6 @@ include "ipints.m";
 include "crypt.m";
 include "loader.m";
 include "sqlite.m";
+include "doom.m";
+include "netsurf.m";
 include "tls.m";

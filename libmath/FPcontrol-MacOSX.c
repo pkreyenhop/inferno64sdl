@@ -1,6 +1,6 @@
 #include "lib9.h"
 #include "mathi.h"
-
+#include <fenv.h>
 #include <stdio.h>
 
 void
@@ -9,6 +9,18 @@ FPinit(void)
 	ulong fcr9 = FPPDBL|FPRNR|FPINVAL|FPZDIV|FPUNFL|FPOVFL;
 	setfsr(0);	/* Clear pending exceptions */
 	setfcr(fcr9);
+}
+
+void
+FPsave(void* envp)
+{
+	fegetenv((fenv_t*) envp);
+}
+
+void
+FPrestore(void* envp)
+{
+	fesetenv((fenv_t*) envp);
 }
 
 ulong
