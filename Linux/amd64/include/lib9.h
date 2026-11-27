@@ -31,6 +31,7 @@
 #include <endian.h>
 
 #define	getwd	infgetwd
+#define	strdup	infstrdup
 
 #ifndef EMU
 typedef struct Proc Proc;

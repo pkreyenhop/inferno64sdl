@@ -54,6 +54,7 @@ mod
 	ipints
 	loader
 	sqlite
+	tls
 #	freetype
 
 port

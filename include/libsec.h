@@ -235,6 +235,7 @@ DigestState* hmac_sha2_256(uchar*, ulong, uchar*, ulong, uchar*, DigestState*);
 DigestState* hmac_sha2_224(uchar*, ulong, uchar*, ulong, uchar*, DigestState*);
 DigestState* hmac_sha2_384(uchar*, ulong, uchar*, ulong, uchar*, DigestState*);
 DigestState* hmac_sha2_512(uchar*, ulong, uchar*, ulong, uchar*, DigestState*);
+DigestState* poly1305(uchar*, ulong, uchar*, ulong, uchar*, DigestState*);
 
 int	tsmemcmp(void*, void*, ulong);
 void	hkdf_x(uchar *salt, ulong nsalt, uchar *info, ulong ninfo, uchar *key, ulong nkey, uchar *d, ulong dlen,

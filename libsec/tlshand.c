@@ -24,6 +24,8 @@ extern int kopen(char*, int);
 extern int kclose(int);
 extern int kread(int, void*, int);
 extern int kwrite(int, void*, int);
+extern void kwerrstr(char*, ...);
+extern void kgerrstr(char*, uint);
 
 enum {
 	TLS13Version	= 0x0304,

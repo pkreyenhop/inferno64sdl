@@ -2,6 +2,8 @@
 
 LIB=libinterp.a
 
+OPTIONAL_OFILES=`{test -f ../libdoom/doomgeneric/doomgeneric.h && echo doom.$O; test -f ../libnetsurf/inst-framebuffer/include/libnsfb.h && echo netsurf.$O; true}
+
 OFILES=\
 	alt.$O\
 	comp-$OBJTYPE.$O\
@@ -31,8 +33,7 @@ OFILES=\
 	string.$O\
 	sqlite.$O\
 	sqlite3.$O\
-	doom.$O\
-	netsurf.$O\
+	$OPTIONAL_OFILES\
 	tls.$O\
 
 
