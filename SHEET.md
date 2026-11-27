@@ -14,10 +14,11 @@ It was built with a strict minimalist philosophy: implement all the ODS parsing,
 
 ### From the Inferno Shell
 ```sh
-wm/sheet                        # Opens the default workbook
-wm/sheet /path/to/file.ods      # Opens a specific .ods file
-wm/sheet -t                     # Headless CLI formula verification on the default workbook
-wm/sheet -t /path/to/file.ods   # Headless CLI formula verification on a specific .ods file
+wm/sheet                            # Opens the default workbook & mounts /mnt/sheet
+wm/sheet /path/to/file.ods          # Opens a specific .ods or .s9 file & mounts /mnt/sheet
+wm/sheet -m /mnt/mysh file.ods      # Mounts the synthetic filesystem at a custom path
+wm/sheet -s [file.ods|file.s9]      # Headless server mode (mounts /mnt/sheet without GUI)
+wm/sheet -t [file.ods]              # Headless CLI formula verification
 ```
 
 ### From macOS Host Terminal
@@ -119,6 +120,118 @@ Designed to stay smooth even on large maximized displays (e.g. 2560×1440 with 1
 
 ---
 
+## Plan 9 / Inferno Integration: `/mnt/sheet` & `.s9` Format
+
+`wm/sheet` exposes the live workbook as a **9P/Styx synthetic filesystem** mounted at `/mnt/sheet` (using `styx(2)` and `styxservers(2)`), serialized with the GUI event loop over Limbo channels (`navc` and `reqc`). Any Inferno shell script, Acme command, or external program can read and modify cells, named ranges, and sheets with standard file operations, and every write immediately recalculates and updates the live GUI window.
+
+### 1. Live Filesystem Layout (`/mnt/sheet`)
+
+- **New shells** opened from the Start menu after `wm/sheet` is running (or the shell that ran `wm/sheet &`) inherit `/mnt/sheet` automatically.
+- **Already-open shells / Acme windows** have their own forked namespaces (`FORKNS`). Attach them to the running `wm/sheet` instance at any time via its loopback Styx listener:
+  ```sh
+  mount -A tcp!127.0.0.1!19900 /mnt/sheet
+  ```
+
+```text
+/mnt/sheet/
+├── ctl                       # Control commands (read status, write commands)
+├── event                     # Blocking change-notification stream (set / recalc / load)
+├── index                     # Sheet list: "<id>\t<nrows>\t<ncols>\t<name>\n"
+├── apply                     # Write .s9 patch lines atomically (write-only)
+├── names/                    # Workbook named ranges (read = value, write = set + recalc)
+│   ├── annual_spend
+│   ├── inflation
+│   ├── real_growth
+│   ├── stock_growth
+│   └── Withdrawal_rate
+└── sheets/
+    └── <id>/
+        ├── name              # Sheet title
+        ├── tsv               # Evaluated sheet as tab-separated values
+        ├── raw               # Sheet cells in .s9 format
+        ├── val/<A1>          # Read-only evaluated value (e.g. 120000, 10%, 67)
+        └── cell/<A1>         # Read/write raw input or formula (write triggers recalc)
+```
+
+### 2. Control Commands (`/mnt/sheet/ctl`)
+- `recalc` — force full recalculation and GUI redraw.
+- `batch on` / `batch off` — defer recalculation during multi-cell writes, then recalculate and redraw once on `batch off`.
+- `sheet <id-or-name>` — switch the active sheet tab in the GUI.
+- `save <path>` — export the workbook in plain-text `.s9` format.
+- `load <path>` — load a `.s9` or `.ods` workbook (auto-detected by ZIP `PK` magic vs text).
+
+### 3. Shell Scripting Examples
+
+```sh
+# Read current spending, withdrawal rate, and FIRE outputs
+cat /mnt/sheet/names/annual_spend
+cat /mnt/sheet/names/Withdrawal_rate
+cat /mnt/sheet/sheets/1/val/C20    # P1: Age when 1st batch runs out
+cat /mnt/sheet/sheets/1/val/E20    # P2: Age when 1st batch runs out
+cat /mnt/sheet/sheets/1/val/C22    # P1: Age when all investments run out
+cat /mnt/sheet/sheets/1/val/E22    # P2: Age when all investments run out
+
+# Change the withdrawal rate (GUI updates live; also writable via sheets/1/cell/C13)
+echo 3.5% > /mnt/sheet/names/Withdrawal_rate
+
+# Update spending, growth, or an individual age/investment cell live
+echo 140000 > /mnt/sheet/names/annual_spend
+echo 8% > /mnt/sheet/names/stock_growth
+echo 45 > /mnt/sheet/sheets/2/cell/B4
+
+# Batch-update multiple cells with one recalculation
+echo 'batch on' > /mnt/sheet/ctl
+echo 110000 > /mnt/sheet/names/annual_spend
+echo 3.5% > /mnt/sheet/names/inflation
+echo 'batch off' > /mnt/sheet/ctl
+
+# Sensitivity sweep across withdrawal rates
+for rate in 3% 3.5% 4% 4.5% 5% {
+    echo $rate > /mnt/sheet/names/Withdrawal_rate
+    echo $rate '->' P1:`{cat /mnt/sheet/sheets/1/val/C20} P2:`{cat /mnt/sheet/sheets/1/val/E20}
+}
+
+# Sensitivity sweep across annual spending
+for spend in 90000 100000 110000 120000 130000 140000 150000 {
+    echo $spend > /mnt/sheet/names/annual_spend
+    echo $spend '->' P1:`{cat /mnt/sheet/sheets/1/val/C20} P2:`{cat /mnt/sheet/sheets/1/val/E20}
+}
+
+# Save & reload plain-text .s9 snapshot
+echo 'save /tmp/plan.s9' > /mnt/sheet/ctl
+echo 'load /tmp/plan.s9' > /mnt/sheet/ctl
+```
+
+### 4. Plain-Text Interchange Format (`.s9`)
+
+Line-oriented UTF-8 tab-separated records (`#` comments ignored) for saving, `diff`ing, version control, and patching via `/mnt/sheet/apply`:
+
+```text
+# Inferno sheet format v1
+sheet	0	Instructions
+sheet	1	Inputs and quick look outputs
+sheet	2	Playground
+
+name	annual_spend	1!C15
+name	stock_growth	1!C5
+
+cell	1!B5	str	Stock market growth
+cell	1!C5	pct	0.1
+cell	1!C15	num	120000
+cell	1!C9	fml	=(1+stock_growth)/(1+inflation)-1
+```
+
+Supported cell types in `.s9`: `num`, `pct`, `str`, `fml`, and `empty` (to clear a cell). `wm/sheet` can open `.s9` files directly (`wm/sheet /tmp/plan.s9`) as well as `.ods` files.
+
+### 5. Companion GUI: FIRE Scenario Explorer (`wm/fire` / `Apps/!Fire`)
+
+`wm/fire` (`appl/wm/fire.b`) is a standalone Limbo/Tk client that demonstrates driving `wm/sheet` purely over 9P/Styx (`tcp!127.0.0.1!19900` -> `/mnt/sheet`) with zero duplicated spreadsheet math:
+- Launch from the Start menu (**FIRE**) or `/Apps/!Fire` while `Sheet` is open (or click **Connect** after opening `Sheet`).
+- Adjust **Stock Growth**, **Inflation**, **Withdrawal Rate**, and **Annual Spending** with live sliders or presets (`Base`, `Conservative`, `High Infl`, `Fat FIRE`, `Lean FIRE`, `Reset`) and watch both `FIRE Explorer` and `Sheet` update in real time.
+- Run one-click **Sweep Spending**, **Sweep Growth**, and **Sweep Withdrawal** sensitivity tables directly against `/mnt/sheet`.
+
+---
+
 ## Building & Self-Testing
 
 ### Compile
@@ -143,7 +256,9 @@ On the reference 5-sheet financial planning workbook, this verifies **1,157 nume
 | :--- | :--- |
 | `appl/wm/sheet.b` | Full Limbo source for `wm/sheet` |
 | `dis/wm/sheet.dis` | Compiled Dis bytecode |
+| `appl/wm/fire.b`, `Apps/!Fire/` | FIRE Scenario Explorer GUI client driving `/mnt/sheet` over Styx |
 | `Apps/!Sheet/!Run`, `!Boot`, `icons/!Sheet.{bit,mask}` | RISC OS-style `!App` bundle and toolbar icon |
+| `Apps/!Shell/!Run`, `Apps/!Acme/!Run` | Auto-mount `tcp!127.0.0.1!19900` onto `/mnt/sheet` when `Sheet` is running |
 | `appl/lib/zip.b` | Inferno ZIP library (patched for `Flocaldatadescr` data descriptors) |
 | `lib/wmsetup` | Start menu entry (`menu Sheet {wmapp /Apps/!Sheet}`) |
 | `emu/MacOSX/win-sdl3.c` | Native SDL3 backend with coalesced drag/present loop |
@@ -152,6 +267,6 @@ On the reference 5-sheet financial planning workbook, this verifies **1,157 nume
 ---
 
 ## Scope & Limitations
-- **In-memory editing**: Cell edits recalculate live across all sheets, but `.ods` write-back/saving is not implemented.
+- **Persistence**: Saves and loads native plain-text `.s9` workbooks via `/mnt/sheet/ctl` (`save`/`load`) and CLI; `.ods` write-back is not implemented.
 - **Focused function set**: Only the OpenFormula functions listed above are implemented (unknown functions return `#NAME?`).
 - **Minimal styling**: Uses clean uniform typography, grid lines, and column widths tuned for readability rather than full ODF style/chart rendering.

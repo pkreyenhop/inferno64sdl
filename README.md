@@ -14,8 +14,8 @@ Inferno represents services, devices, network interfaces, and application state 
 
 ### Native macOS Apple Silicon (`MacOSX/arm64`) & SDL3 GUI
 - **Native `MacOSX/arm64` target**: platform headers (`MacOSX/arm64/include/`), `mkfiles/mkfile-MacOSX-arm64`, arm64 floating-point control (`lib9/setfcr-MacOSX-arm64.c`), atomic `_tas`, and 64-bit pthreads.
-- **Native SDL3 display backend** (`emu/MacOSX/win-sdl3.c`): runs directly on macOS without XQuartz, supporting native fullscreen, high-DPI scaling, UTF-8 text input, custom cursors, scroll wheel, coalesced mouse-motion/frame presentation for smooth dragging, macOS clipboard integration, Option/Cmd click emulation for 3-button mouse, and `Cmd+Q` to quit.
-- **Startup launcher (`./start-inferno.sh`)**: auto-detects OS/architecture, sets `ROOT`, `PATH`, and a 256 MB image pool (`-pimage=256m`) for high-resolution displays, and launches `wm/wm` in native SDL3 fullscreen by default (with `--windowed` and `--shell` modes).
+- **Native SDL3 display backend** (`emu/MacOSX/win-sdl3.c`): runs directly on macOS without XQuartz, supporting native fullscreen, high-DPI scaling, UTF-8 text input, custom cursors, scroll wheel, coalesced mouse-motion/frame presentation for smooth dragging, macOS clipboard integration (`Cmd/Alt+C` copy and `Cmd/Alt+V` paste in Shell, Acme, and Sheet), Option/Cmd click emulation for 3-button mouse, and `Cmd+Q` to quit.
+- **Startup launcher (`./start-inferno.sh`)**: auto-detects OS/architecture, sets `ROOT`, `PATH`, and a 256 MB image pool (`-pimage=256m`) for high-resolution displays, supports in-place **Restart** from the Start menu, and launches `wm/wm` in native SDL3 fullscreen by default (with `--windowed` and `--shell` modes).
 
 ### Desktop & Core 64-Bit Inferno Environment
 - **Hosted `emu` runtime** and **Limbo compiler (`limbo`)**, `mk`, `iyacc`, `ndate`, and full Dis userland (`appl/` -> `dis/`).
@@ -25,7 +25,7 @@ Inferno represents services, devices, network interfaces, and application state 
   - **Shell (`wm/sh`)** (rc-style Inferno shell, opens automatically on startup)
   - **Charon** browser (with TLS 1.3, HTML 4.01, and Gemini protocol support)
   - **Filer**, **Brutus** markdown editor, **Pinboard**, and RISC OS-style `!App` bundles in `Apps/`
-  - **Exit** option in the starter menu (`echo halt > /dev/sysctl`) for clean shutdown
+  - **Restart** and **Exit** options in the starter menu for in-place restarts and clean shutdown (`echo halt > /dev/sysctl`)
 
 ### Builtin Modules & Included Applications
 - **NetSurf 3.11 Web Browser (`$NetSurf` / `wm/netsurf`)**:
@@ -37,7 +37,8 @@ Inferno represents services, devices, network interfaces, and application state 
   - Accessible from **Games -> Doom** or via `wm/doom [wad_path]`.
   - Controls: Arrows or `W`/`S` move/turn, `A`/`D` strafe, `F` or left-click fire, `E`/`Space`/right-click use, `1`–`7` weapons, `Esc` menu.
 - **Limbo Apps**:
-  - **ODS Spreadsheet (`wm/sheet` / `Apps/!Sheet`)**: native Limbo OpenDocument Spreadsheet (`.ods`) viewer and evaluator (`appl/wm/sheet.b`) with multi-sheet tabs, named ranges, formula evaluation (`SUM`, `MAX`, `IF`, `ISBLANK`, `TRUE`, `MATCH`, `INDEX`, `IFNA`, arithmetic/array comparisons), interactive cell editing and live recalculation, incremental vertical/horizontal scroll blitting, draggable scrollbars, and a CLI verification mode (`wm/sheet -t [file.ods]`). Accessible from the starter menu (**Sheet**) or `/Apps/!Sheet`.
+  - **ODS Spreadsheet (`wm/sheet` / `Apps/!Sheet`)**: native Limbo OpenDocument Spreadsheet (`.ods`) and `.s9` viewer/evaluator (`appl/wm/sheet.b`, see [SHEET.md](SHEET.md)) with multi-sheet tabs, named ranges, formula evaluation (`SUM`, `MAX`, `IF`, `ISBLANK`, `TRUE`, `MATCH`, `INDEX`, `IFNA`, arithmetic/array comparisons), interactive editing, incremental scroll blitting, a live **9P/Styx filesystem at `/mnt/sheet`** (plus `tcp!127.0.0.1!19900`) for scripting/automation, headless server mode (`wm/sheet -s`), and CLI verification (`wm/sheet -t`). Accessible from the starter menu (**Sheet**) or `/Apps/!Sheet`.
+  - **FIRE Scenario Explorer (`wm/fire` / `Apps/!Fire`)**: interactive Limbo/Tk GUI (`appl/wm/fire.b`) that drives `wm/sheet` live over 9P/Styx (`/mnt/sheet`) with real-time sliders (Stock Growth, Inflation, Withdrawal Rate, Annual Spending), one-click presets, live outcome readouts, and spending/growth/withdrawal sensitivity sweeps. Accessible from the starter menu (**FIRE**) or `/Apps/!Fire`.
   - **Mandelbrot Viewer (`wm/mandelbrot`)**: interactive graphical fractal explorer (`appl/wm/mandelbrot.b`) with left/right-click zoom, `+`/`-` iteration control, `r` reset, and live resize.
   - **Recursive Fibonacci (`fib`)**: CLI Limbo example (`appl/cmd/fib.b`).
 
@@ -106,6 +107,7 @@ mk install
 | `libinterp/netsurf.c`, `module/netsurf.m`, `appl/wm/netsurf.b` | `$NetSurf` builtin module and `wm/netsurf` browser |
 | `libinterp/doom.c`, `module/doom.m`, `appl/wm/doom.b` | `$Doom` builtin module and `wm/doom` frontend |
 | `appl/wm/sheet.b`, `Apps/!Sheet/` | Native Limbo ODS spreadsheet app (`wm/sheet`) and `!App` bundle |
+| `appl/wm/fire.b`, `Apps/!Fire/` | FIRE Scenario Explorer GUI driving `wm/sheet` over 9P/Styx |
 | `appl/wm/mandelbrot.b` | Interactive graphical Mandelbrot viewer |
 | `appl/cmd/fib.b`, `appl/cmd/nsstress.b` | Recursive Fibonacci CLI and NetSurf Hacker News stress test |
 | `lib/wmsetup` | Desktop startup layout (Acme, Shell, Pinboard) and starter menu |

@@ -25,6 +25,7 @@ include "string.m";
 
 include "arg.m";
 include "env.m";
+include "keyboard.m";
 
 WmSh: module
 {
@@ -275,7 +276,14 @@ main(ctxt: ref Draw->Context, argv: list of string)
 
 	for(;;) alt {
 	c := <-wm.kbd =>
-		tk->keyboard(t, c);
+		if(c == (Keyboard->APP | 'c')){
+			editor(t, "snarf");
+		}else if(c == (Keyboard->APP | 'v')){
+			editor(t, "paste");
+			sendinput(t);
+		}else{
+			tk->keyboard(t, c);
+		}
 	m := <-wm.ptr =>
 		tk->pointer(t, *m);
 	c := <-wm.ctl or

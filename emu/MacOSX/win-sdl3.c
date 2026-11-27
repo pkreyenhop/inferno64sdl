@@ -82,6 +82,7 @@ static Uint32        sdl_ev_wakeup = 0;
 static int mouse_buttons = 0;
 static int mouse_x = 0;
 static int mouse_y = 0;
+static int suppress_text = 0;
 
 static void
 push_wakeup(void)
@@ -267,9 +268,23 @@ handle_keydown(SDL_KeyboardEvent *kev)
 	SDL_Keymod mod = kev->mod;
 	int r = -1;
 
+	suppress_text = 0;
+
 	/* Cmd+Q quits cleanly on macOS */
 	if((mod & SDL_KMOD_GUI) && sym == SDLK_Q){
 		cleanexit(0);
+		return;
+	}
+
+	/* Cmd/Alt+C (copy) and Cmd/Alt+V (paste) */
+	if((mod & (SDL_KMOD_GUI | SDL_KMOD_ALT)) && sym == SDLK_C){
+		suppress_text = 1;
+		gkbdputc(gkbdq, APP | 'c');
+		return;
+	}
+	if((mod & (SDL_KMOD_GUI | SDL_KMOD_ALT)) && sym == SDLK_V){
+		suppress_text = 1;
+		gkbdputc(gkbdq, APP | 'v');
 		return;
 	}
 
@@ -490,7 +505,11 @@ sdl3_mainloop(void)
 				break;
 
 			case SDL_EVENT_TEXT_INPUT:
-				handle_textinput(ev.text.text);
+				if(suppress_text){
+					suppress_text = 0;
+				}else{
+					handle_textinput(ev.text.text);
+				}
 				break;
 			}
 		} while(++nevents < 32 && SDL_PollEvent(&ev));

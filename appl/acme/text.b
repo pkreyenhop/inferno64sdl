@@ -724,6 +724,12 @@ Text.typex(t : self ref Text, r : int, echomode : int)
 			q0 = t.backnl(t.org, n);
 			t.setorigin(q0, FALSE);
 			return;
+		Keyboard->APP | 'c' =>
+			exec->cut(t, t, TRUE, FALSE);
+			return;
+		Keyboard->APP | 'v' =>
+			exec->paste(t, t, TRUE, FALSE);
+			return;
 		Keyboard->Home =>
 			t.commit(TRUE);
 			t.show(0, 0, FALSE);

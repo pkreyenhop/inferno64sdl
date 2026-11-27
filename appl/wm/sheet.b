@@ -23,6 +23,12 @@ include "tk.m";
 include "wmclient.m";
 	wmclient: Wmclient;
 	Window: import wmclient;
+include "styx.m";
+	styx: Styx;
+	Tmsg, Rmsg: import styx;
+include "styxservers.m";
+	styxservers: Styxservers;
+	Styxserver, Fid, Navigator, Navop: import styxservers;
 
 WmSheet: module
 {
@@ -1870,10 +1876,12 @@ redraw(win: ref Window, b: ref Book, cur_sheet: int, editing: int, editbuf: stri
 	win.display.image.flush(Draw->Flushnow);
 }
 
-commit_edit(b: ref Book, cur_sheet: int, text: string)
+commit_cell(b: ref Book, sidx, r, c: int, text: string, do_recalc: int)
 {
-	sh := b.sheets[cur_sheet];
-	cell := ensurecell(sh, sh.cur_r, sh.cur_c);
+	if(sidx < 0 || sidx >= len b.sheets)
+		return;
+	sh := b.sheets[sidx];
+	cell := ensurecell(sh, r, c);
 	t := trim(text);
 	cell.formula = "";
 	cell.raw_str = "";
@@ -1890,25 +1898,1030 @@ commit_edit(b: ref Book, cur_sheet: int, text: string)
 		cell.vtype = "percentage";
 		cell.raw_num = real t[0:len t - 1] / 100.0;
 	}else{
-		# Check if numeric
+		# Check if numeric (allow commas like 120,000)
 		isnum := 1;
 		hasdig := 0;
+		clean := "";
 		for(i := 0; i < len t; i++){
 			ch := t[i];
-			if(ch >= '0' && ch <= '9') hasdig = 1;
-			else if(ch == '-' && i == 0) ;
-			else if(ch == '.') ;
-			else isnum = 0;
+			if(ch >= '0' && ch <= '9'){
+				hasdig = 1;
+				clean[len clean] = ch;
+			}else if(ch == '-' && i == 0){
+				clean[len clean] = ch;
+			}else if(ch == '.'){
+				clean[len clean] = ch;
+			}else if(ch == ','){
+				;
+			}else{
+				isnum = 0;
+			}
 		}
 		if(isnum && hasdig){
 			cell.vtype = "float";
-			cell.raw_num = real t;
+			cell.raw_num = real clean;
 		}else{
 			cell.vtype = "string";
 			cell.raw_str = t;
 		}
 	}
-	recalc(b);
+	if(do_recalc)
+		recalc(b);
+}
+
+commit_edit(b: ref Book, cur_sheet: int, text: string)
+{
+	sh := b.sheets[cur_sheet];
+	commit_cell(b, cur_sheet, sh.cur_r, sh.cur_c, text, 1);
+}
+
+# ---------------------------------------------------------------------------
+# Plain-text .s9 interchange format & clean value formatters
+# ---------------------------------------------------------------------------
+
+format_plain(cell: ref Cell): string
+{
+	if(cell == nil)
+		return "";
+	v := cell.val;
+	case v.kind {
+	VEMPTY =>
+		return "";
+	VSTR =>
+		return v.s;
+	VNA =>
+		return "#N/A";
+	VERR =>
+		return v.s;
+	VNUM =>
+		if(cell.vtype == "percentage"){
+			pct := v.num * 100.0;
+			ip := int math->rint(pct);
+			if(math->fabs(pct - real ip) < 0.005)
+				return sys->sprint("%d%%", ip);
+			return sys->sprint("%.4g%%", pct);
+		}
+		iv := big math->rint(v.num);
+		if(math->fabs(v.num - real iv) < 0.005)
+			return string iv;
+		return sys->sprint("%.6g", v.num);
+	}
+	return "";
+}
+
+format_raw(cell: ref Cell): string
+{
+	if(cell == nil)
+		return "";
+	if(len cell.formula > 0){
+		f := cell.formula;
+		if(len f >= 4 && f[0:4] == "of:=")
+			return "=" + f[4:];
+		return f;
+	}
+	if(cell.vtype == "percentage")
+		return format_plain(cell);
+	if(cell.vtype == "float")
+		return format_plain(cell);
+	return cell.raw_str;
+}
+
+sheet_tsv(sh: ref Sheet): string
+{
+	out := "";
+	for(r := 0; r < sh.nrows; r++){
+		row := sh.rows[r];
+		if(row != nil){
+			line := "";
+			last_nonempty := -1;
+			for(c := 0; c < len row; c++){
+				if(row[c] != nil && len format_plain(row[c]) > 0)
+					last_nonempty = c;
+			}
+			for(c = 0; c <= last_nonempty; c++){
+				if(c > 0)
+					line += "\t";
+				if(row[c] != nil)
+					line += format_plain(row[c]);
+			}
+			out += line;
+		}
+		out += "\n";
+	}
+	return out;
+}
+
+sheet_raw_s9(b: ref Book, sidx: int): string
+{
+	if(sidx < 0 || sidx >= len b.sheets)
+		return "";
+	sh := b.sheets[sidx];
+	out := "";
+	for(r := 0; r < sh.nrows; r++){
+		row := sh.rows[r];
+		if(row == nil) continue;
+		for(c := 0; c < len row; c++){
+			cl := row[c];
+			if(cl == nil) continue;
+			kind := "";
+			val := "";
+			if(len cl.formula > 0){
+				kind = "fml";
+				val = format_raw(cl);
+			}else if(cl.vtype == "percentage"){
+				kind = "pct";
+				val = sys->sprint("%.10g", cl.raw_num);
+			}else if(cl.vtype == "float"){
+				kind = "num";
+				val = sys->sprint("%.10g", cl.raw_num);
+			}else if(len cl.raw_str > 0){
+				kind = "str";
+				val = cl.raw_str;
+			}else{
+				continue;
+			}
+			out += sys->sprint("cell\t%d!%s\t%s\t%s\n", sidx, celladdr(r, c), kind, val);
+		}
+	}
+	return out;
+}
+
+book_to_s9(b: ref Book): string
+{
+	out := "# Inferno sheet format v1\n";
+	for(si := 0; si < len b.sheets; si++)
+		out += sys->sprint("sheet\t%d\t%s\n", si, b.sheets[si].name);
+	out += "\n";
+	for(nl := b.names; nl != nil; nl = tl nl){
+		nr := hd nl;
+		if(nr.sheetidx >= 0)
+			out += sys->sprint("name\t%s\t%d!%s\n", nr.name, nr.sheetidx, celladdr(nr.row, nr.col));
+	}
+	out += "\n";
+	for(si = 0; si < len b.sheets; si++)
+		out += sheet_raw_s9(b, si);
+	return out;
+}
+
+save_s9(b: ref Book, path: string): string
+{
+	fd := sys->create(path, Sys->OWRITE, 8r664);
+	if(fd == nil)
+		return sys->sprint("cannot create %s: %r", path);
+	data := array of byte book_to_s9(b);
+	if(sys->write(fd, data, len data) != len data)
+		return sys->sprint("write %s: %r", path);
+	return nil;
+}
+
+split_tabs(s: string): array of string
+{
+	parts: list of string;
+	start := 0;
+	for(i := 0; i <= len s; i++){
+		if(i == len s || s[i] == '\t'){
+			parts = s[start:i] :: parts;
+			start = i + 1;
+		}
+	}
+	n := len parts;
+	arr := array[n] of string;
+	for(k := n - 1; k >= 0; k--){
+		arr[k] = hd parts;
+		parts = tl parts;
+	}
+	return arr;
+}
+
+parse_s9_addr(b: ref Book, s: string): (int, int, int, int)
+{
+	bang := -1;
+	for(i := 0; i < len s; i++){
+		if(s[i] == '!'){
+			bang = i;
+			break;
+		}
+	}
+	if(bang <= 0 || bang >= len s - 1)
+		return (-1, 0, 0, 0);
+	sp := s[0:bang];
+	ap := s[bang + 1:];
+	sidx := -1;
+	isdigits := 1;
+	for(i = 0; i < len sp; i++)
+		if(sp[i] < '0' || sp[i] > '9')
+			isdigits = 0;
+	if(isdigits)
+		sidx = int sp;
+	else
+		sidx = findsheet(b, sp);
+	if(sidx < 0 || sidx >= len b.sheets)
+		return (-1, 0, 0, 0);
+	(r, c, ok) := parse_a1(ap);
+	if(!ok)
+		return (-1, 0, 0, 0);
+	return (sidx, r, c, 1);
+}
+
+apply_s9_text(b: ref Book, text: string): (int, string)
+{
+	applied := 0;
+	start := 0;
+	for(i := 0; i <= len text; i++){
+		if(i < len text && text[i] != '\n')
+			continue;
+		line := text[start:i];
+		start = i + 1;
+		if(len line > 0 && line[len line - 1] == '\r')
+			line = line[0:len line - 1];
+		tline := trim(line);
+		if(len tline == 0 || tline[0] == '#')
+			continue;
+		f := split_tabs(line);
+		if(len f < 3)
+			continue;
+		case f[0] {
+		"sheet" =>
+			idx := int f[1];
+			nm := f[2];
+			if(idx >= len b.sheets){
+				ns := array[idx + 1] of ref Sheet;
+				if(b.sheets != nil)
+					ns[0:] = b.sheets;
+				for(k := len b.sheets; k <= idx; k++)
+					ns[k] = ref Sheet(sys->sprint("Sheet%d", k + 1), 1, 1, array[1] of array of ref Cell, 0, 0, 0, 0);
+				b.sheets = ns;
+			}
+			b.sheets[idx].name = nm;
+			applied++;
+		"name" =>
+			(sidx, r, c, ok) := parse_s9_addr(b, f[2]);
+			if(ok){
+				found := 0;
+				for(nl := b.names; nl != nil; nl = tl nl){
+					nr := hd nl;
+					if(tolower(nr.name) == tolower(f[1])){
+						nr.sheetidx = sidx; nr.row = r; nr.col = c;
+						found = 1;
+						break;
+					}
+				}
+				if(!found)
+					b.names = ref NamedRange(f[1], f[2], sidx, r, c) :: b.names;
+				applied++;
+			}
+		"cell" =>
+			if(len f < 4)
+				continue;
+			(sidx, r, c, ok) := parse_s9_addr(b, f[1]);
+			if(!ok)
+				continue;
+			sh := b.sheets[sidx];
+			cl := ensurecell(sh, r, c);
+			cl.formula = "";
+			cl.raw_str = "";
+			cl.raw_num = 0.0;
+			cl.has_cached = 0;
+			case f[2] {
+			"num" =>
+				cl.vtype = "float";
+				cl.raw_num = real f[3];
+			"pct" =>
+				cl.vtype = "percentage";
+				cl.raw_num = real f[3];
+			"str" =>
+				cl.vtype = "string";
+				cl.raw_str = f[3];
+			"fml" =>
+				cl.formula = f[3];
+				if(cl.vtype != "percentage")
+					cl.vtype = "float";
+			"empty" =>
+				cl.vtype = "";
+			* =>
+				commit_cell(b, sidx, r, c, f[3], 0);
+			}
+			applied++;
+		}
+	}
+	return (applied, nil);
+}
+
+load_s9(path: string): (ref Book, string)
+{
+	fd := sys->open(path, Sys->OREAD);
+	if(fd == nil)
+		return (nil, sys->sprint("cannot open %s: %r", path));
+	data := "";
+	buf := array[16384] of byte;
+	for(;;){
+		n := sys->read(fd, buf, len buf);
+		if(n <= 0)
+			break;
+		data += string buf[0:n];
+	}
+	book := ref Book(path, array[0] of ref Sheet, nil);
+	(napp, err) := apply_s9_text(book, data);
+	if(err != nil)
+		return (nil, err);
+	if(len book.sheets == 0)
+		return (nil, "no sheets found in " + path);
+	return (book, nil);
+}
+
+load_book(path: string): (ref Book, string)
+{
+	fd := sys->open(path, Sys->OREAD);
+	if(fd == nil)
+		return (nil, sys->sprint("cannot open %s: %r", path));
+	hdr := array[4] of byte;
+	n := sys->read(fd, hdr, len hdr);
+	fd = nil;
+	if(n >= 2 && hdr[0] == byte 'P' && hdr[1] == byte 'K')
+		return load_ods(path);
+	return load_s9(path);
+}
+
+# ---------------------------------------------------------------------------
+# Live Synthetic 9P/Styx Filesystem (/mnt/sheet)
+# ---------------------------------------------------------------------------
+
+QKROOT:   con 0;
+QKTOP:    con 1;  # 1=ctl, 2=event, 3=index, 4=apply
+QKNAMES:  con 2;
+QKNAME:   con 3;  # payload = index in book.names
+QKSHEETS: con 4;
+QKSHEET:  con 5;  # payload = sidx
+QKSSUB:   con 6;  # payload = (sidx << 8) | sub (1=name, 2=tsv, 3=raw)
+QKSVALD:  con 7;  # payload = sidx
+QKSCELLD: con 8;  # payload = sidx
+QKSVAL:   con 9;  # payload = (sidx << 36) | (r << 16) | c
+QKSCELL:  con 10; # payload = (sidx << 36) | (r << 16) | c
+
+QTOP_CTL:   con 1;
+QTOP_EVENT: con 2;
+QTOP_INDEX: con 3;
+QTOP_APPLY: con 4;
+
+QSUB_NAME:  con 1;
+QSUB_TSV:   con 2;
+QSUB_RAW:   con 3;
+
+FsReq: adt {
+	q:       big;
+	offset:  big;
+	count:   int;
+	data:    array of byte;
+	iswrite: int;
+	evmsg:   ref Tmsg.Read;
+	rreply:  chan of (array of byte, string);
+	wreply:  chan of (int, string);
+};
+
+mkqid(kind: int, payload: big): big
+{
+	return (big kind << 56) | (payload & ((big 1 << 56) - big 1));
+}
+
+qkind(q: big): int
+{
+	return int (q >> 56);
+}
+
+qpay(q: big): big
+{
+	return q & ((big 1 << 56) - big 1);
+}
+
+mkcellq(kind, sidx, r, c: int): big
+{
+	p := (big sidx << 36) | (big (r & 16rfffff) << 16) | big (c & 16rffff);
+	return mkqid(kind, p);
+}
+
+decode_cellq(q: big): (int, int, int)
+{
+	p := qpay(q);
+	sidx := int (p >> 36);
+	r := int ((p >> 16) & big 16rfffff);
+	c := int (p & big 16rffff);
+	return (sidx, r, c);
+}
+
+mkdirent(q: big, name: string, mode: int, length: big): ref Sys->Dir
+{
+	d := ref sys->zerodir;
+	d.name = name;
+	d.uid = "inferno";
+	d.gid = "inferno";
+	d.muid = "inferno";
+	qtype := Sys->QTFILE;
+	if(mode & Sys->DMDIR)
+		qtype = Sys->QTDIR;
+	d.qid = Sys->Qid(q, 0, qtype);
+	d.mode = mode;
+	d.length = length;
+	return d;
+}
+
+get_named_by_idx(b: ref Book, idx: int): ref NamedRange
+{
+	i := 0;
+	for(nl := b.names; nl != nil; nl = tl nl){
+		if(i == idx)
+			return hd nl;
+		i++;
+	}
+	return nil;
+}
+
+stat_q(b: ref Book, q: big): (ref Sys->Dir, string)
+{
+	k := qkind(q);
+	p := qpay(q);
+	case k {
+	QKROOT =>
+		return (mkdirent(q, "/", Sys->DMDIR | 8r555, big 0), nil);
+	QKTOP =>
+		case int p {
+		QTOP_CTL =>   return (mkdirent(q, "ctl",   8r666, big 0), nil);
+		QTOP_EVENT => return (mkdirent(q, "event", 8r444, big 0), nil);
+		QTOP_INDEX => return (mkdirent(q, "index", 8r444, big 0), nil);
+		QTOP_APPLY => return (mkdirent(q, "apply", 8r222, big 0), nil);
+		}
+	QKNAMES =>
+		return (mkdirent(q, "names", Sys->DMDIR | 8r555, big 0), nil);
+	QKNAME =>
+		nr := get_named_by_idx(b, int p);
+		if(nr != nil)
+			return (mkdirent(q, nr.name, 8r666, big 0), nil);
+	QKSHEETS =>
+		return (mkdirent(q, "sheets", Sys->DMDIR | 8r555, big 0), nil);
+	QKSHEET =>
+		si := int p;
+		if(si >= 0 && si < len b.sheets)
+			return (mkdirent(q, string si, Sys->DMDIR | 8r555, big 0), nil);
+	QKSSUB =>
+		si := int (p >> 8);
+		sub := int (p & big 16rff);
+		if(si >= 0 && si < len b.sheets){
+			case sub {
+			QSUB_NAME => return (mkdirent(q, "name", 8r444, big 0), nil);
+			QSUB_TSV  => return (mkdirent(q, "tsv",  8r444, big 0), nil);
+			QSUB_RAW  => return (mkdirent(q, "raw",  8r444, big 0), nil);
+			}
+		}
+	QKSVALD =>
+		si := int p;
+		if(si >= 0 && si < len b.sheets)
+			return (mkdirent(q, "val", Sys->DMDIR | 8r555, big 0), nil);
+	QKSCELLD =>
+		si := int p;
+		if(si >= 0 && si < len b.sheets)
+			return (mkdirent(q, "cell", Sys->DMDIR | 8r555, big 0), nil);
+	QKSVAL =>
+		(si, r, c) := decode_cellq(q);
+		if(si >= 0 && si < len b.sheets)
+			return (mkdirent(q, celladdr(r, c), 8r444, big 0), nil);
+	QKSCELL =>
+		(si, r, c) := decode_cellq(q);
+		if(si >= 0 && si < len b.sheets)
+			return (mkdirent(q, celladdr(r, c), 8r666, big 0), nil);
+	}
+	return (nil, Styxservers->Enotfound);
+}
+
+walk_q(b: ref Book, pq: big, name: string): (ref Sys->Dir, string)
+{
+	if(name == ".."){
+		k := qkind(pq);
+		p := qpay(pq);
+		case k {
+		QKROOT =>   return stat_q(b, pq);
+		QKTOP or QKNAMES or QKSHEETS =>
+			return stat_q(b, mkqid(QKROOT, big 0));
+		QKNAME =>
+			return stat_q(b, mkqid(QKNAMES, big 0));
+		QKSHEET =>
+			return stat_q(b, mkqid(QKSHEETS, big 0));
+		QKSSUB =>
+			return stat_q(b, mkqid(QKSHEET, p >> 8));
+		QKSVALD or QKSCELLD =>
+			return stat_q(b, mkqid(QKSHEET, p));
+		QKSVAL =>
+			(si, nil, nil) := decode_cellq(pq);
+			return stat_q(b, mkqid(QKSVALD, big si));
+		QKSCELL =>
+			(si, nil, nil) := decode_cellq(pq);
+			return stat_q(b, mkqid(QKSCELLD, big si));
+		}
+		return stat_q(b, mkqid(QKROOT, big 0));
+	}
+
+	k := qkind(pq);
+	p := qpay(pq);
+	case k {
+	QKROOT =>
+		case name {
+		"ctl"    => return stat_q(b, mkqid(QKTOP, big QTOP_CTL));
+		"event"  => return stat_q(b, mkqid(QKTOP, big QTOP_EVENT));
+		"index"  => return stat_q(b, mkqid(QKTOP, big QTOP_INDEX));
+		"apply"  => return stat_q(b, mkqid(QKTOP, big QTOP_APPLY));
+		"names"  => return stat_q(b, mkqid(QKNAMES, big 0));
+		"sheets" => return stat_q(b, mkqid(QKSHEETS, big 0));
+		}
+	QKNAMES =>
+		i := 0;
+		for(nl := b.names; nl != nil; nl = tl nl){
+			nr := hd nl;
+			if(nr.name == name || tolower(nr.name) == tolower(name))
+				return stat_q(b, mkqid(QKNAME, big i));
+			i++;
+		}
+	QKSHEETS =>
+		isd := len name > 0;
+		for(i := 0; i < len name; i++)
+			if(name[i] < '0' || name[i] > '9')
+				isd = 0;
+		if(isd){
+			si := int name;
+			if(si >= 0 && si < len b.sheets)
+				return stat_q(b, mkqid(QKSHEET, big si));
+		}
+	QKSHEET =>
+		si := int p;
+		if(si >= 0 && si < len b.sheets){
+			case name {
+			"name" => return stat_q(b, mkqid(QKSSUB, (big si << 8) | big QSUB_NAME));
+			"tsv"  => return stat_q(b, mkqid(QKSSUB, (big si << 8) | big QSUB_TSV));
+			"raw"  => return stat_q(b, mkqid(QKSSUB, (big si << 8) | big QSUB_RAW));
+			"val"  => return stat_q(b, mkqid(QKSVALD, big si));
+			"cell" => return stat_q(b, mkqid(QKSCELLD, big si));
+			}
+		}
+	QKSVALD =>
+		si := int p;
+		(r, c, ok) := parse_a1(name);
+		if(ok && si >= 0 && si < len b.sheets)
+			return stat_q(b, mkcellq(QKSVAL, si, r, c));
+	QKSCELLD =>
+		si := int p;
+		(r, c, ok) := parse_a1(name);
+		if(ok && si >= 0 && si < len b.sheets)
+			return stat_q(b, mkcellq(QKSCELL, si, r, c));
+	}
+	return (nil, Styxservers->Enotfound);
+}
+
+readdir_q(b: ref Book, q: big, offset, count: int, reply: chan of (ref Sys->Dir, string))
+{
+	k := qkind(q);
+	p := qpay(q);
+	ents: list of ref Sys->Dir;
+
+	case k {
+	QKROOT =>
+		ents = mkdirent(mkqid(QKSHEETS, big 0), "sheets", Sys->DMDIR | 8r555, big 0) ::
+		       mkdirent(mkqid(QKNAMES, big 0),  "names",  Sys->DMDIR | 8r555, big 0) ::
+		       mkdirent(mkqid(QKTOP, big QTOP_APPLY), "apply", 8r222, big 0) ::
+		       mkdirent(mkqid(QKTOP, big QTOP_INDEX), "index", 8r444, big 0) ::
+		       mkdirent(mkqid(QKTOP, big QTOP_EVENT), "event", 8r444, big 0) ::
+		       mkdirent(mkqid(QKTOP, big QTOP_CTL),   "ctl",   8r666, big 0) :: nil;
+	QKNAMES =>
+		i := 0;
+		for(nl := b.names; nl != nil; nl = tl nl){
+			nr := hd nl;
+			ents = mkdirent(mkqid(QKNAME, big i), nr.name, 8r666, big 0) :: ents;
+			i++;
+		}
+	QKSHEETS =>
+		for(si := len b.sheets - 1; si >= 0; si--)
+			ents = mkdirent(mkqid(QKSHEET, big si), string si, Sys->DMDIR | 8r555, big 0) :: ents;
+	QKSHEET =>
+		si := int p;
+		if(si >= 0 && si < len b.sheets){
+			ents = mkdirent(mkqid(QKSCELLD, big si), "cell", Sys->DMDIR | 8r555, big 0) ::
+			       mkdirent(mkqid(QKSVALD,  big si), "val",  Sys->DMDIR | 8r555, big 0) ::
+			       mkdirent(mkqid(QKSSUB, (big si << 8) | big QSUB_RAW),  "raw",  8r444, big 0) ::
+			       mkdirent(mkqid(QKSSUB, (big si << 8) | big QSUB_TSV),  "tsv",  8r444, big 0) ::
+			       mkdirent(mkqid(QKSSUB, (big si << 8) | big QSUB_NAME), "name", 8r444, big 0) :: nil;
+		}
+	QKSVALD or QKSCELLD =>
+		si := int p;
+		if(si >= 0 && si < len b.sheets){
+			sh := b.sheets[si];
+			ck := QKSVAL;
+			mode := 8r444;
+			if(k == QKSCELLD){
+				ck = QKSCELL;
+				mode = 8r666;
+			}
+			idx := 0;
+			sent := 0;
+			for(r := 0; r < sh.nrows && sent < count; r++){
+				row := sh.rows[r];
+				if(row == nil) continue;
+				for(c := 0; c < len row && sent < count; c++){
+					if(row[c] == nil) continue;
+					if(len row[c].formula == 0 && len row[c].disp == 0) continue;
+					if(idx >= offset){
+						reply <-= (mkdirent(mkcellq(ck, si, r, c), celladdr(r, c), mode, big 0), nil);
+						sent++;
+					}
+					idx++;
+				}
+			}
+			reply <-= (nil, nil);
+			return;
+		}
+	}
+
+	# Reverse non-cell list so order is natural, then skip offset and emit count
+	rev: list of ref Sys->Dir;
+	for(l := ents; l != nil; l = tl l)
+		rev = hd l :: rev;
+	idx := 0;
+	sent := 0;
+	for(l = rev; l != nil && sent < count; l = tl l){
+		if(idx >= offset){
+			reply <-= (hd l, nil);
+			sent++;
+		}
+		idx++;
+	}
+	reply <-= (nil, nil);
+}
+
+handle_navop(b: ref Book, op: ref Navop)
+{
+	pick m := op {
+	Stat =>
+		m.reply <-= stat_q(b, m.path);
+	Walk =>
+		m.reply <-= walk_q(b, m.path, m.name);
+	Readdir =>
+		readdir_q(b, m.path, m.offset, m.count, m.reply);
+	}
+}
+
+styx_loop(tchan: chan of ref Tmsg, srv: ref Styxserver, reqc: chan of ref FsReq)
+{
+	while((gm := <-tchan) != nil){
+		pick m := gm {
+		Readerror =>
+			return;
+		Read =>
+			(c, err) := srv.canread(m);
+			if(c == nil){
+				srv.reply(ref Rmsg.Error(m.tag, err));
+				continue;
+			}
+			if(c.qtype & Sys->QTDIR){
+				srv.read(m);
+				continue;
+			}
+			if(qkind(c.path) == QKTOP && int qpay(c.path) == QTOP_EVENT){
+				reqc <-= ref FsReq(c.path, m.offset, m.count, nil, 0, m, nil, nil);
+				continue;
+			}
+			rc := chan of (array of byte, string);
+			reqc <-= ref FsReq(c.path, m.offset, m.count, nil, 0, nil, rc, nil);
+			(data, rerr) := <-rc;
+			if(rerr != nil)
+				srv.reply(ref Rmsg.Error(m.tag, rerr));
+			else
+				srv.reply(styxservers->readbytes(m, data));
+		Write =>
+			(c, err) := srv.canwrite(m);
+			if(c == nil){
+				srv.reply(ref Rmsg.Error(m.tag, err));
+				continue;
+			}
+			wc := chan of (int, string);
+			reqc <-= ref FsReq(c.path, m.offset, len m.data, m.data, 1, nil, nil, wc);
+			(nw, werr) := <-wc;
+			if(werr != nil)
+				srv.reply(ref Rmsg.Error(m.tag, werr));
+			else
+				srv.reply(ref Rmsg.Write(m.tag, nw));
+		* =>
+			srv.default(gm);
+		}
+	}
+}
+
+evwaiters: list of ref Tmsg.Read;
+evqueue: list of string;
+batch_mode := 0;
+
+emit_event(srv: ref Styxserver, line: string)
+{
+	if(srv == nil)
+		return;
+	if(evwaiters != nil){
+		data := array of byte line;
+		for(l := evwaiters; l != nil; l = tl l){
+			m := hd l;
+			d := data;
+			if(len d > m.count)
+				d = d[0:m.count];
+			srv.reply(ref Rmsg.Read(m.tag, d));
+		}
+		evwaiters = nil;
+		return;
+	}
+	if(len evqueue < 32)
+		evqueue = line :: evqueue;
+}
+
+pop_evqueue(): string
+{
+	if(evqueue == nil)
+		return nil;
+	# FIFO: reverse, pop head, reverse back
+	rev: list of string;
+	for(l := evqueue; l != nil; l = tl l)
+		rev = hd l :: rev;
+	out := hd rev;
+	evqueue = nil;
+	for(l = tl rev; l != nil; l = tl l)
+		evqueue = hd l :: evqueue;
+	return out;
+}
+
+handle_fsreq(srv: ref Styxserver, b: ref Book, cur_sheet: int, req: ref FsReq): (ref Book, int, int)
+{
+	# Async /mnt/sheet/event reader
+	if(req.evmsg != nil){
+		ev := pop_evqueue();
+		if(ev != nil){
+			d := array of byte ev;
+			if(len d > req.evmsg.count)
+				d = d[0:req.evmsg.count];
+			srv.reply(ref Rmsg.Read(req.evmsg.tag, d));
+		}else{
+			evwaiters = req.evmsg :: evwaiters;
+		}
+		return (b, cur_sheet, 0);
+	}
+
+	k := qkind(req.q);
+	p := qpay(req.q);
+
+	if(!req.iswrite){
+		s := "";
+		case k {
+		QKTOP =>
+			case int p {
+			QTOP_CTL =>
+				s = sys->sprint("batch %d\nsheet %d\n", batch_mode, cur_sheet);
+			QTOP_INDEX =>
+				for(si := 0; si < len b.sheets; si++){
+					sh := b.sheets[si];
+					s += sys->sprint("%d\t%d\t%d\t%s\n", si, sh.nrows, sh.ncols, sh.name);
+				}
+			}
+		QKNAME =>
+			nr := get_named_by_idx(b, int p);
+			if(nr == nil){
+				req.rreply <-= (nil, Styxservers->Enotfound);
+				return (b, cur_sheet, 0);
+			}
+			s = format_plain(getcell(b, nr.sheetidx, nr.row, nr.col)) + "\n";
+		QKSSUB =>
+			si := int (p >> 8);
+			sub := int (p & big 16rff);
+			if(si < 0 || si >= len b.sheets){
+				req.rreply <-= (nil, Styxservers->Enotfound);
+				return (b, cur_sheet, 0);
+			}
+			case sub {
+			QSUB_NAME => s = b.sheets[si].name + "\n";
+			QSUB_TSV  => s = sheet_tsv(b.sheets[si]);
+			QSUB_RAW  => s = sheet_raw_s9(b, si);
+			}
+		QKSVAL =>
+			(si, r, c) := decode_cellq(req.q);
+			s = format_plain(getcell(b, si, r, c)) + "\n";
+		QKSCELL =>
+			(si, r, c) := decode_cellq(req.q);
+			s = format_raw(getcell(b, si, r, c)) + "\n";
+		* =>
+			req.rreply <-= (nil, Styxservers->Enotfound);
+			return (b, cur_sheet, 0);
+		}
+		req.rreply <-= (array of byte s, nil);
+		return (b, cur_sheet, 0);
+	}
+
+	# Write request
+	txt := string req.data;
+	nw := len req.data;
+	dirty := 0;
+
+	case k {
+	QKTOP =>
+		case int p {
+		QTOP_CTL =>
+			cmd := trim(txt);
+			(nargs, args) := sys->tokenize(cmd, " \t\n\r");
+			if(nargs == 0){
+				req.wreply <-= (nw, nil);
+				return (b, cur_sheet, 0);
+			}
+			op := hd args;
+			case op {
+			"recalc" =>
+				recalc(b);
+				emit_event(srv, "recalc\n");
+				dirty = 1;
+			"batch" =>
+				if(tl args != nil && hd tl args == "on"){
+					batch_mode = 1;
+				}else{
+					batch_mode = 0;
+					recalc(b);
+					emit_event(srv, "recalc\n");
+					dirty = 1;
+				}
+			"sheet" =>
+				if(tl args != nil){
+					targ := trim(cmd[len "sheet":]);
+					si := findsheet(b, targ);
+					if(si < 0){
+						isd := len targ > 0;
+						for(i := 0; i < len targ; i++)
+							if(targ[i] < '0' || targ[i] > '9') isd = 0;
+						if(isd && int targ >= 0 && int targ < len b.sheets)
+							si = int targ;
+					}
+					if(si >= 0){
+						cur_sheet = si;
+						dirty = 1;
+					}else{
+						req.wreply <-= (0, "unknown sheet");
+						return (b, cur_sheet, 0);
+					}
+				}
+			"save" =>
+				if(tl args == nil){
+					req.wreply <-= (0, "usage: save path");
+					return (b, cur_sheet, 0);
+				}
+				serr := save_s9(b, trim(cmd[len "save":]));
+				if(serr != nil){
+					req.wreply <-= (0, serr);
+					return (b, cur_sheet, 0);
+				}
+			"load" =>
+				if(tl args == nil){
+					req.wreply <-= (0, "usage: load path");
+					return (b, cur_sheet, 0);
+				}
+				(nb, lerr) := load_book(trim(cmd[len "load":]));
+				if(lerr != nil){
+					req.wreply <-= (0, lerr);
+					return (b, cur_sheet, 0);
+				}
+				b = nb;
+				recalc(b);
+				if(cur_sheet >= len b.sheets)
+					cur_sheet = 0;
+				emit_event(srv, "load\n");
+				dirty = 1;
+			* =>
+				req.wreply <-= (0, "unknown ctl command");
+				return (b, cur_sheet, 0);
+			}
+			req.wreply <-= (nw, nil);
+			return (b, cur_sheet, dirty);
+		QTOP_APPLY =>
+			(nil, aerr) := apply_s9_text(b, txt);
+			if(aerr != nil){
+				req.wreply <-= (0, aerr);
+				return (b, cur_sheet, 0);
+			}
+			if(!batch_mode){
+				recalc(b);
+				emit_event(srv, "recalc\n");
+				dirty = 1;
+			}
+			req.wreply <-= (nw, nil);
+			return (b, cur_sheet, dirty);
+		* =>
+			req.wreply <-= (0, Styxservers->Eperm);
+			return (b, cur_sheet, 0);
+		}
+	QKNAME =>
+		nr := get_named_by_idx(b, int p);
+		if(nr == nil || nr.sheetidx < 0){
+			req.wreply <-= (0, Styxservers->Enotfound);
+			return (b, cur_sheet, 0);
+		}
+		commit_cell(b, nr.sheetidx, nr.row, nr.col, txt, !batch_mode);
+		if(!batch_mode){
+			cl := getcell(b, nr.sheetidx, nr.row, nr.col);
+			emit_event(srv, sys->sprint("set %d %s %s\n", nr.sheetidx, celladdr(nr.row, nr.col), format_plain(cl)));
+			dirty = 1;
+		}
+		req.wreply <-= (nw, nil);
+		return (b, cur_sheet, dirty);
+	QKSCELL =>
+		(si, r, c) := decode_cellq(req.q);
+		if(si < 0 || si >= len b.sheets){
+			req.wreply <-= (0, Styxservers->Enotfound);
+			return (b, cur_sheet, 0);
+		}
+		commit_cell(b, si, r, c, txt, !batch_mode);
+		if(!batch_mode){
+			cl := getcell(b, si, r, c);
+			emit_event(srv, sys->sprint("set %d %s %s\n", si, celladdr(r, c), format_plain(cl)));
+			dirty = 1;
+		}
+		req.wreply <-= (nw, nil);
+		return (b, cur_sheet, dirty);
+	}
+
+	req.wreply <-= (0, Styxservers->Eperm);
+	return (b, cur_sheet, 0);
+}
+
+listen_cfd: ref Sys->FD;
+tcp_cfds: list of ref Sys->FD;
+fs_closing := 0;
+
+listen_sheetfs(addr: string, navc: chan of ref Navop, reqc: chan of ref FsReq)
+{
+	(ok, c) := sys->announce(addr);
+	if(ok < 0)
+		return;
+	listen_cfd = c.cfd;
+	for(;;){
+		(lok, nc) := sys->listen(c);
+		if(lok < 0 || fs_closing)
+			return;
+		dfd := sys->open(nc.dir + "/data", Sys->ORDWR);
+		if(dfd == nil)
+			continue;
+		if(fs_closing){
+			if(nc.cfd != nil)
+				sys->fprint(nc.cfd, "hangup");
+			dfd = nil;
+			return;
+		}
+		if(nc.cfd != nil)
+			tcp_cfds = nc.cfd :: tcp_cfds;
+		(tchan, srv) := Styxserver.new(dfd, Navigator.new(navc), mkqid(QKROOT, big 0));
+		dfd = nil;
+		spawn styx_loop(tchan, srv, reqc);
+	}
+}
+
+shutdown_sheetfs(mountpt: string)
+{
+	fs_closing = 1;
+	if(listen_cfd != nil){
+		sys->fprint(listen_cfd, "hangup");
+		listen_cfd = nil;
+	}
+	for(l := tcp_cfds; l != nil; l = tl l){
+		cfd := hd l;
+		if(cfd != nil)
+			sys->fprint(cfd, "hangup");
+	}
+	tcp_cfds = nil;
+	sys->unmount(nil, mountpt);
+}
+
+mount_sheetfs(fd: ref Sys->FD, mountpt: string)
+{
+	if(sys->mount(fd, nil, mountpt, Sys->MREPL, nil) < 0)
+		sys->fprint(sys->fildes(2), "wm/sheet: mount %s failed: %r\n", mountpt);
+}
+
+start_sheetfs(mountpt: string): (ref Styxserver, chan of ref Navop, chan of ref FsReq)
+{
+	styx = load Styx Styx->PATH;
+	styxservers = load Styxservers Styxservers->PATH;
+	if(styx == nil || styxservers == nil)
+		return (nil, nil, nil);
+	styx->init();
+	styxservers->init(styx);
+
+	fds := array[2] of ref Sys->FD;
+	if(sys->pipe(fds) < 0)
+		return (nil, nil, nil);
+
+	navc := chan of ref Navop;
+	reqc := chan of ref FsReq;
+	(tchan, srv) := Styxserver.new(fds[0], Navigator.new(navc), mkqid(QKROOT, big 0));
+	fds[0] = nil;
+	spawn styx_loop(tchan, srv, reqc);
+	# Mount asynchronously so the main alt loop can service Tattach's Navop.Stat
+	spawn mount_sheetfs(fds[1], mountpt);
+	# Also listen on loopback TCP so already-open shells (with forked namespaces) can mount it
+	spawn listen_sheetfs("tcp!127.0.0.1!19900", navc, reqc);
+	return (srv, navc, reqc);
 }
 
 ensure_visible(win: ref Window, sh: ref Sheet)
@@ -1960,18 +2973,25 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	sys->bind("#s", "/chan", Sys->MBEFORE);
 
 	testmode := 0;
+	servemode := 0;
+	mountpt := "/mnt/sheet";
 	path := DEFAULT_ODS;
 	if(argv != nil){
 		for(a := tl argv; a != nil; a = tl a){
 			arg := hd a;
 			if(arg == "-t")
 				testmode = 1;
-			else
+			else if(arg == "-s")
+				servemode = 1;
+			else if(arg == "-m" && tl a != nil){
+				a = tl a;
+				mountpt = hd a;
+			}else
 				path = arg;
 		}
 	}
 
-	(book, err) := load_ods(path);
+	(book, err) := load_book(path);
 	if(err != nil){
 		sys->fprint(sys->fildes(2), "wm/sheet: %s\n", err);
 		raise "fail:load";
@@ -1984,6 +3004,31 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	}
 
 	sys->pctl(Sys->NEWPGRP, nil);
+
+	# Start on 'Inputs and quick look outputs' if present, else sheet 0
+	cur_sheet := findsheet(book, "Inputs and quick look outputs");
+	if(cur_sheet < 0)
+		cur_sheet = 0;
+
+	(srv, navc, reqc) := start_sheetfs(mountpt);
+	if(navc == nil)
+		navc = chan of ref Navop;
+	if(reqc == nil)
+		reqc = chan of ref FsReq;
+
+	if(servemode){
+		if(srv == nil){
+			sys->fprint(sys->fildes(2), "wm/sheet: failed to mount %s\n", mountpt);
+			raise "fail:mount";
+		}
+		for(;;) alt{
+		op := <-navc =>
+			handle_navop(book, op);
+		req := <-reqc =>
+			(book, cur_sheet, nil) = handle_fsreq(srv, book, cur_sheet, req);
+		}
+	}
+
 	wmclient->init();
 	if(ctxt == nil)
 		ctxt = wmclient->makedrawcontext();
@@ -1998,11 +3043,6 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	win.onscreen("place");
 	win.startinput("kbd" :: "ptr" :: nil);
 
-	# Start on 'Inputs and quick look outputs' if present, else sheet 0
-	cur_sheet := findsheet(book, "Inputs and quick look outputs");
-	if(cur_sheet < 0)
-		cur_sheet = 0;
-
 	editing := 0;
 	editbuf := "";
 	lastb := 0;
@@ -2011,10 +3051,21 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	redraw(win, book, cur_sheet, editing, editbuf, 1);
 
 	for(;;) alt{
+	op := <-navc =>
+		handle_navop(book, op);
+
+	req := <-reqc =>
+		dirty := 0;
+		(book, cur_sheet, dirty) = handle_fsreq(srv, book, cur_sheet, req);
+		if(dirty)
+			redraw(win, book, cur_sheet, editing, editbuf, 1);
+
 	ctl := <-win.ctl or
 	ctl = <-win.ctxt.ctl =>
-		if(ctl == "exit")
+		if(ctl == "exit"){
+			shutdown_sheetfs(mountpt);
 			exit;
+		}
 		win.wmctl(ctl);
 		if(win.image != nil && (win.image.r.dx() != bufw || win.image.r.dy() != bufh))
 			redraw(win, book, cur_sheet, editing, editbuf, 1);
@@ -2173,6 +3224,12 @@ init(ctxt: ref Draw->Context, argv: list of string)
 			'\b' =>
 				if(len editbuf > 0)
 					editbuf = editbuf[0:len editbuf - 1];
+			Keyboard->APP | 'c' =>
+				wmclient->snarfput(editbuf);
+			Keyboard->APP | 'v' =>
+				sn := trim(wmclient->snarfget());
+				if(len sn > 0)
+					editbuf += sn;
 			* =>
 				if(c >= 32 && c < 127)
 					editbuf[len editbuf] = c;
@@ -2221,6 +3278,18 @@ init(ctxt: ref Draw->Context, argv: list of string)
 				Keyboard->Del or '\b' =>
 					commit_edit(book, cur_sheet, "");
 					force = 1;
+					break KbdLoop;
+				Keyboard->APP | 'c' =>
+					cl := getcell(book, cur_sheet, sh.cur_r, sh.cur_c);
+					if(cl != nil)
+						wmclient->snarfput(format_plain(cl));
+					break KbdLoop;
+				Keyboard->APP | 'v' =>
+					sn := trim(wmclient->snarfget());
+					if(len sn > 0){
+						commit_edit(book, cur_sheet, sn);
+						force = 1;
+					}
 					break KbdLoop;
 				* =>
 					if(c >= 32 && c < 127){

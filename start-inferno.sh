@@ -27,6 +27,26 @@ fi
 
 export PATH="$BIN_DIR:$PATH"
 
+run_wm() {
+    FS="$1"
+    shift
+    RESTART_FLAG="$ROOT/tmp/restart"
+    mkdir -p "$ROOT/tmp"
+    while :; do
+        rm -f "$RESTART_FLAG"
+        if INFERNO_FULLSCREEN="$FS" "$EMU" -pimage=256m -r "$ROOT" "$@" /dis/wm/wm.dis; then
+            rc=0
+        else
+            rc=$?
+        fi
+        if [ -f "$RESTART_FLAG" ]; then
+            rm -f "$RESTART_FLAG"
+            continue
+        fi
+        exit "$rc"
+    done
+}
+
 case "${1:-}" in
     --shell|-s)
         shift
@@ -34,7 +54,7 @@ case "${1:-}" in
         ;;
     --windowed|-w)
         shift
-        INFERNO_FULLSCREEN=0 exec "$EMU" -pimage=256m -r "$ROOT" "$@" /dis/wm/wm.dis
+        run_wm 0 "$@"
         ;;
     --help|-h)
         cat <<EOF
@@ -64,9 +84,9 @@ EOF
         done
 
         if [ "$HAS_GEOM" -eq 1 ]; then
-            INFERNO_FULLSCREEN=0 exec "$EMU" -pimage=256m -r "$ROOT" "$@" /dis/wm/wm.dis
+            run_wm 0 "$@"
         else
-            INFERNO_FULLSCREEN=1 exec "$EMU" -pimage=256m -r "$ROOT" "$@" /dis/wm/wm.dis
+            run_wm 1 "$@"
         fi
         ;;
 esac
