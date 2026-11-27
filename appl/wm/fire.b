@@ -482,7 +482,7 @@ init(ctxt: ref Draw->Context, nil: list of string)
 	s = <-top.wreq or
 	s = <-titlectl =>
 		if(s == "exit")
-			exit;
+			sys->unmount(nil, MNT);
 		tkclient->wmctl(top, s);
 
 	msg := <-cmdc =>
