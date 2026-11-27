@@ -9,6 +9,7 @@
 #include	<sys/time.h>
 
 #include	<stdint.h>
+#include	<pthread.h>
 
 #include	"dat.h"
 #include	"fns.h"
@@ -154,6 +155,26 @@ osreboot(char *file, char **argv)
 	error("reboot failure");
 }
 
+extern void sdl3_mainloop(void) __attribute__((weak));
+
+struct EmuInitArg {
+	Proc *p;
+	char *imod;
+};
+
+static void*
+emuinit_thread(void *v)
+{
+	struct EmuInitArg *a = v;
+	Proc *p = a->p;
+	char *imod = a->imod;
+
+	free(a);
+	kprocinit(p);
+	emuinit(imod);
+	return NULL;
+}
+
 void
 libinit(char *imod)
 {
@@ -205,7 +226,6 @@ libinit(char *imod)
 	}
 
 	p = newproc();
-	kprocinit(p);
 
 	pw = getpwuid(getuid());
 	if(pw != nil)
@@ -216,7 +236,24 @@ libinit(char *imod)
 	p->env->uid = getuid();
 	p->env->gid = getgid();
 
-	emuinit(imod);
+	if(sdl3_mainloop != nil){
+		pthread_t thr;
+		pthread_attr_t attr;
+		struct EmuInitArg *arg = malloc(sizeof(*arg));
+		if(arg == nil)
+			panic("can't allocate emuinit arg");
+		arg->p = p;
+		arg->imod = imod;
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+		if(pthread_create(&thr, &attr, emuinit_thread, arg) != 0)
+			panic("pthread_create failed for emuinit");
+		pthread_attr_destroy(&attr);
+		sdl3_mainloop();
+	}else{
+		kprocinit(p);
+		emuinit(imod);
+	}
 }
 
 int

@@ -16,7 +16,7 @@ dev
 	indir
 	ds
 
-	draw	win-x11a
+	draw	win-sdl3
 	pointer
 	snarf
 

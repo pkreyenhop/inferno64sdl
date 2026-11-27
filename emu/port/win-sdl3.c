@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /*
  * Avoid macro collisions between Inferno's lib9.h and SDL3 headers

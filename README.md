@@ -14,7 +14,7 @@ Inferno represents services, devices, network interfaces, and application state 
 
 ### Native macOS Apple Silicon (`MacOSX/arm64`) & SDL3 GUI
 - **Native `MacOSX/arm64` target**: platform headers (`MacOSX/arm64/include/`), `mkfiles/mkfile-MacOSX-arm64`, arm64 floating-point control (`lib9/setfcr-MacOSX-arm64.c`), atomic `_tas`, and 64-bit pthreads.
-- **Native SDL3 display backend** (`emu/MacOSX/win-sdl3.c`): runs directly on macOS without XQuartz, supporting native fullscreen, high-DPI scaling, UTF-8 text input, custom cursors, scroll wheel, coalesced mouse-motion/frame presentation for smooth dragging, macOS clipboard integration (`Cmd/Alt+C` copy and `Cmd/Alt+V` paste in Shell, Acme, and Sheet), Option/Cmd click emulation for 3-button mouse, and `Cmd+Q` to quit.
+- **Native SDL3 display backend** (`emu/port/win-sdl3.c`): runs natively on macOS (Metal) and Linux (Wayland/X11) without XQuartz, supporting native fullscreen, high-DPI scaling, UTF-8 text input, custom cursors, scroll wheel, coalesced mouse-motion/frame presentation for smooth dragging, host clipboard integration (`Cmd/Alt+C` copy and `Cmd/Alt+V` paste in Shell, Acme, and Sheet), Option/Cmd click emulation for 3-button mouse, and `Cmd+Q` to quit.
 - **Startup launcher (`./start-inferno.sh`)**: auto-detects OS/architecture, sets `ROOT`, `PATH`, and a 256 MB image pool (`-pimage=256m`) for high-resolution displays, supports in-place **Restart** from the Start menu, and launches `wm/wm` in native SDL3 fullscreen by default (with `--windowed` and `--shell` modes).
 
 ### Desktop & Core 64-Bit Inferno Environment
@@ -79,14 +79,18 @@ mk install
 
 > **Note on third-party static libraries**: `libdoom.a` (from [ozkl/doomgeneric](https://github.com/ozkl/doomgeneric)), `libnetsurf.a` (from `netsurf-all-3.11`), and `lib/doom/freedoom1.wad` (from [Freedoom](https://github.com/freedoom/freedoom/releases)) are excluded from git via `.gitignore` and should be built/placed in `MacOSX/arm64/lib/` and `lib/doom/` when building from a fresh clone (or remove `doom` / `netsurf` from `emu/MacOSX/emu` and `emu/MacOSX/mkfile` for a minimal build).
 
-### Linux (amd64 / arm64)
+### Linux (amd64 / arm64 — Native SDL3 / Wayland & X11)
 
 Install dependencies:
 ```sh
-sudo apt-get install -y libx11-dev libxext-dev linux-libc-dev libpulse-dev
+# Arch / Omarchy Linux:
+sudo pacman -S --needed base-devel git sdl3 libpulse
+
+# Debian / Ubuntu:
+sudo apt-get install -y build-essential git libsdl3-dev libpulse-dev
 ```
 
-Set `SYSHOST=Linux` in `mkconfig`, then build:
+Set `SYSHOST=Linux` in `mkconfig`, then build and launch:
 ```sh
 export ROOT="$(pwd)"
 export objtype=amd64   # or arm64
@@ -94,7 +98,10 @@ export PATH="$ROOT/Linux/$objtype/bin:$PATH"
 ./makemk.sh
 mk mkdirs
 mk install
+./start-inferno.sh
 ```
+
+> **Hyprland / Wayland tip**: SDL3 runs natively on Wayland. Use `Alt+C` / `Alt+V` for host <-> Inferno copy/paste (since `Super` is usually bound by Hyprland).
 
 ---
 
@@ -103,7 +110,7 @@ mk install
 | Path | Description |
 | :--- | :--- |
 | `start-inferno.sh` | Startup script (defaults to native SDL3 fullscreen `wm/wm`) |
-| `emu/MacOSX/win-sdl3.c` | Native SDL3 display, input, cursor, and clipboard backend |
+| `emu/port/win-sdl3.c` | Shared native SDL3 display, input, cursor, and clipboard backend (macOS & Linux) |
 | `libinterp/netsurf.c`, `module/netsurf.m`, `appl/wm/netsurf.b` | `$NetSurf` builtin module and `wm/netsurf` browser |
 | `libinterp/doom.c`, `module/doom.m`, `appl/wm/doom.b` | `$Doom` builtin module and `wm/doom` frontend |
 | `appl/wm/sheet.b`, `Apps/!Sheet/` | Native Limbo ODS spreadsheet app (`wm/sheet`) and `!App` bundle |

@@ -62,3 +62,4 @@ install:V: $O.$CONF
 
 devfs.$O:	../port/devfs-posix.c
 devds.$O:	../port/devds.c
+win-sdl3.$O:	../port/win-sdl3.c
