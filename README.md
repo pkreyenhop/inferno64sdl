@@ -1,6 +1,6 @@
 # inferno64sdl
 
-**inferno64sdl** is a fork of [caerwynj/inferno64](https://github.com/caerwynj/inferno64) (the 64-bit fork of Bell Labs' [Inferno](https://www.vitanuova.com/inferno/) distributed operating system) focused on running Inferno natively on **macOS Apple Silicon (`arm64`)** with a native **SDL3** GUI backend—no XQuartz required—alongside embedded **NetSurf 3.11** and **DOOM** builtin modules.
+**inferno64sdl** is a fork of [caerwynj/inferno64](https://github.com/caerwynj/inferno64) (the 64-bit fork of Bell Labs' [Inferno](https://www.vitanuova.com/inferno/) distributed operating system) focused on running Inferno natively on **macOS Apple Silicon (`arm64`)** and **Omarchy / Arch Linux (`amd64` / `arm64`)** with a shared native **SDL3** GUI backend (Metal on macOS, Wayland/X11 on Linux—no XQuartz or XWayland required)—alongside a native Limbo ODS spreadsheet (`wm/sheet` + `/mnt/sheet` 9P/Styx FS), **FIRE Scenario Explorer** (`wm/fire`), and embedded **NetSurf 3.11** and **DOOM** builtin modules.
 
 ---
 
@@ -79,30 +79,44 @@ mk install
 
 > **Note on third-party static libraries**: `libdoom.a` (from [ozkl/doomgeneric](https://github.com/ozkl/doomgeneric)), `libnetsurf.a` (from `netsurf-all-3.11`), and `lib/doom/freedoom1.wad` (from [Freedoom](https://github.com/freedoom/freedoom/releases)) are excluded from git via `.gitignore` and should be built/placed in `MacOSX/arm64/lib/` and `lib/doom/` when building from a fresh clone (or remove `doom` / `netsurf` from `emu/MacOSX/emu` and `emu/MacOSX/mkfile` for a minimal build).
 
-### Linux (amd64 / arm64 — Native SDL3 / Wayland & X11)
+### Omarchy Linux / Arch Linux (`amd64` / `arm64` — Native SDL3 / Wayland)
 
-Install dependencies:
+Install build and runtime dependencies via `pacman` (Omarchy already includes PipeWire with `pipewire-pulse`):
 ```sh
-# Arch / Omarchy Linux:
 sudo pacman -S --needed base-devel git sdl3 libpulse
-
-# Debian / Ubuntu:
-sudo apt-get install -y build-essential git libsdl3-dev libpulse-dev
 ```
 
-Set `SYSHOST=Linux` in `mkconfig`, then build and launch:
+Clone, configure for Linux, build, and launch:
 ```sh
+git clone https://github.com/pkreyenhop/inferno64sdl.git
+cd inferno64sdl
+
 sed -i 's/^SYSHOST=MacOSX/SYSHOST=Linux/' mkconfig
 export ROOT="$(pwd)"
-export objtype=amd64   # or arm64
+export objtype=amd64   # Intel/AMD x86_64 (use arm64 on ARM Linux)
 export PATH="$ROOT/Linux/$objtype/bin:$PATH"
+
 ./makemk.sh
 mk mkdirs
 mk install
-./start-inferno.sh
+
+./start-inferno.sh                 # Native SDL3/Wayland fullscreen
+./start-inferno.sh -w -g1280x800   # Windowed mode
 ```
 
-> **Hyprland / Wayland tip**: SDL3 runs natively on Wayland. Use `Alt+C` / `Alt+V` for host <-> Inferno copy/paste (since `Super` is usually bound by Hyprland).
+> **Omarchy / Hyprland notes**:
+> - SDL3 runs natively on Wayland (crisp HiDPI scaling, no XWayland needed).
+> - Use `Alt+C` / `Alt+V` for host <-> Inferno copy/paste (since Hyprland typically binds `Super`).
+> - Place any personal `.ods` workbooks in `usr/inferno/` (gitignored) to open them with `wm/sheet`.
+
+### Debian / Ubuntu Linux (`amd64` / `arm64`)
+
+Install dependencies:
+```sh
+sudo apt-get install -y build-essential git libsdl3-dev libpulse-dev
+```
+
+Then follow the same `mkconfig`, `./makemk.sh`, `mk mkdirs`, and `mk install` steps above.
 
 ---
 
