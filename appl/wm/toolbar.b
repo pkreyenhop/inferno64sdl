@@ -276,19 +276,12 @@ handlerequest(clientid: string, args: list of string): string
 
 iconify(id, label, iconpath: string)
 {
+	iconpath = iconpath;
 	label = condenselabel(label);
-	e := tk->cmd(tbtop, "button .toolbar." +id+" -relief flat -bd 0 -bg #d4d4d8 -fg #09090b -activebackground #c4c4cc -height 34 -padx 14 -command {send task "+id+"} -takefocus 0 ");
-	# When an icon path was supplied (via tkclient->seticon / $wmicon) and
-	# the bitmap registers cleanly, display it instead of the label text.
-	name := "";
-	if(iconpath != "")
-		name = registericon(iconpath);
-	if(name != "")
-		cmd(tbtop, ".toolbar." +id+" configure -image " + name);
-	else
-		cmd(tbtop, ".toolbar." +id+" configure" + font + " -text '" + label);
+	e := tk->cmd(tbtop, "button .toolbar." +id+" -relief flat -bd 0 -bg #d4d4d8 -fg #09090b -activebackground #c4c4cc -padx 14 -pady 5 -command {send task "+id+"} -takefocus 0 ");
+	cmd(tbtop, ".toolbar." +id+" configure" + font + " -text '" + label);
 	if(e[0] != '!')
-		cmd(tbtop, "pack .toolbar."+id+" -side left -padx 3 -pady 3 ");
+		cmd(tbtop, "pack .toolbar."+id+" -side left -padx 4 -pady 5");
 	cmd(tbtop, "update");
 }
 
@@ -333,7 +326,7 @@ deiconify(id: string)
 layout(top: ref Tk->Toplevel)
 {
 	r := top.screenr;
-	h := 52;
+	h := 48;
 	if(r.dy() < 480)
 		h = tk->rect(top, ".b", Tk->Border|Tk->Required).dy();
 	cmd(top, ". configure -x " + string (r.min.x) +
@@ -357,12 +350,12 @@ toolbar(ctxt: ref Draw->Context, startmenu: int,
 
 	tk->namechan(tbtop, exec, "exec");
 	tk->namechan(tbtop, task, "task");
-	cmd(tbtop, "frame .toolbar -height 50 -bg #ececef");
+	cmd(tbtop, "frame .toolbar -bg #ececef");
 	if (startmenu) {
-		cmd(tbtop, "menubutton .toolbar.start -text {Inferno} -font /fonts/vera/verabd/verabd.18.font -bg #09090b -fg white -activebackground #27272a -activeforeground white -relief flat -bd 0 -padx 18 -pady 8 -menu .m");
-		cmd(tbtop, "pack .toolbar.start -side left -padx 10 -pady 7");
+		cmd(tbtop, "menubutton .toolbar.start -text {Inferno} -font /fonts/vera/verabd/verabd.18.font -bg #09090b -fg white -activebackground #27272a -activeforeground white -relief flat -bd 0 -padx 16 -pady 5 -menu .m");
+		cmd(tbtop, "pack .toolbar.start -side left -padx 8 -pady 5");
 	}
-	cmd(tbtop, "pack .toolbar -fill both");
+	cmd(tbtop, "pack .toolbar -fill both -expand 1");
 	cmd(tbtop, "menu .m -bg white -fg #09090b -activebackground #dbeafe -activeforeground #09090b -bd 1");
 	return tbtop;
 }
@@ -380,20 +373,19 @@ setup(shctxt: ref Context, finished: chan of int)
 
 condenselabel(label: string): string
 {
-	if(len label > 15){
-		new := "";
-		l := 0;
-		while(len label > 15 && l < 3) {
-			new += label[0:15]+"\n";
-			label = label[15:];
-			for(v := 0; v < len label; v++)
-				if(label[v] != ' ')
-					break;
-			label = label[v:];
-			l++;
+	# Keep taskbar labels single-line and readable (strip long " - /path/..." suffixes)
+	for(i := 0; i + 2 < len label; i++){
+		if(label[i] == ' ' && label[i+1] == '-' && label[i+2] == ' ' && i > 0){
+			label = label[0:i];
+			break;
 		}
-		label = new + label;
 	}
+	# Replace any embedded newlines with spaces
+	for(j := 0; j < len label; j++)
+		if(label[j] == '\n' || label[j] == '\r')
+			label[j] = ' ';
+	if(len label > 18)
+		label = label[0:15] + "...";
 	return label;
 }
 
