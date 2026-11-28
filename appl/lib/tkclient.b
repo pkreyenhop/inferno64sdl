@@ -66,12 +66,17 @@ toplevel(ctxt: ref Draw->Context, topconfig: string, title: string, buts: int): 
 	readscreenrect(top);
 	c := titlebar->new(top, buts);
 	titlebar->settitle(top, title);
-	# Auto-pick-up of the !App folder icon set by the filer's launch_app.
+	# Auto-pick-up of the !App folder icon and launch command for session save.
 	e := load Env Env->PATH;
 	if(e != nil) {
 		ip := e->getenv("wmicon");
 		if(ip != nil && ip != "")
 			seticon(top, ip);
+		wc := e->getenv("wmcmd");
+		if(wc != nil && wc != "") {
+			e->setenv("wmcmd", "");
+			wmctl(top, sys->sprint("appcmd %q", wc));
+		}
 	}
 	return (top, c);
 }
@@ -88,6 +93,15 @@ readscreenrect(top: ref Tk->Toplevel)
 
 onscreen(top: ref Tk->Toplevel, how: string)
 {
+	e := load Env Env->PATH;
+	if(e != nil){
+		g := e->getenv("wmgeom");
+		if(g != nil && g != ""){
+			e->setenv("wmgeom", "");
+			wmctl(top, sys->sprint("!reshape . -1 %s onscreen", g));
+			return;
+		}
+	}
 	if(how == nil)
 		how = "place";
 	wmctl(top, sys->sprint("!reshape . -1 %s %q",

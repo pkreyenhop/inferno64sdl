@@ -43,6 +43,16 @@ SavedRect: adt {
 };
 savedrects: list of ref SavedRect;
 
+AppInfo: adt {
+	cid: int;
+	cmd: string;
+	r: Rect;
+	hasr: int;
+};
+appinfos: list of ref AppInfo;
+startms := 0;
+sessionpath := "";
+
 badmodule(p: string)
 {
 	sys->fprint(sys->fildes(2), "wm: cannot load %s: %r\n", p);
@@ -75,6 +85,8 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	winplace->init();
 
 	sys->pctl(Sys->NEWPGRP|Sys->FORKNS, nil);
+	startms = sys->millisec();
+	sessionpath = getsesspath();
 	if (ctxt == nil)
 		ctxt = wmclient->makedrawcontext();
 	display = ctxt.display;
@@ -169,6 +181,8 @@ init(ctxt: ref Draw->Context, argv: list of string)
 		if(rc == nil){
 			c.remove();
 			clearsavedrects(c.id);
+			if(removeappinfo(c.id))
+				savesession();
 			if(c.stop == nil)
 				break;
 			if(c == ptrfocus)
@@ -356,6 +370,12 @@ handlerequest(win: ref Wmclient->Window, wmctxt: ref Wmcontext, c: ref Client, r
 
 	"fixedorigin" =>
 		c.flags |= Fixedorigin;
+
+	"appcmd" =>
+		if(n >= 2){
+			setappcmd(c.id, hd tl args);
+			savesession();
+		}
 
 	"rect" =>
 		;
@@ -602,6 +622,108 @@ togglemaxwin(c: ref Client, w: ref Window): string
 	return reshape(c, w.tag, maxr);
 }
 
+getsesspath(): string
+{
+	user := "inferno";
+	fd := sys->open("/dev/user", Sys->OREAD);
+	if(fd != nil){
+		buf := array[64] of byte;
+		n := sys->read(fd, buf, len buf);
+		if(n > 0){
+			u := string buf[0:n];
+			while(len u > 0 && (u[len u - 1] == '\n' || u[len u - 1] == ' '))
+				u = u[0:len u - 1];
+			if(len u > 0)
+				user = u;
+		}
+	}
+	return "/usr/" + user + "/lib/wmsession";
+}
+
+findappinfo(cid: int): ref AppInfo
+{
+	for(l := appinfos; l != nil; l = tl l)
+		if((hd l).cid == cid)
+			return hd l;
+	return nil;
+}
+
+setappcmd(cid: int, cmd: string)
+{
+	ai := findappinfo(cid);
+	if(ai != nil){
+		ai.cmd = cmd;
+		return;
+	}
+	appinfos = ref AppInfo(cid, cmd, Rect((0, 0), (0, 0)), 0) :: appinfos;
+}
+
+removeappinfo(cid: int): int
+{
+	found := 0;
+	nl: list of ref AppInfo;
+	for(l := appinfos; l != nil; l = tl l){
+		ai := hd l;
+		if(ai.cid == cid)
+			found = 1;
+		else
+			nl = ai :: nl;
+	}
+	appinfos = nl;
+	return found;
+}
+
+updateapprect(cid: int, r: Rect): int
+{
+	ai := findappinfo(cid);
+	if(ai == nil)
+		return 0;
+	# Ignore off-screen minimized positions (wmclient moves minimized windows past displayr.max)
+	if(screen == nil || r.min.x >= screen.image.r.max.x || r.min.y >= screen.image.r.max.y)
+		return 0;
+	if(r.dx() < 100 || r.dy() < 80)
+		return 0;
+	ai.r = r;
+	ai.hasr = 1;
+	return 1;
+}
+
+savesession()
+{
+	if(sessionpath == nil || sessionpath == "")
+		return;
+	if(sys->millisec() - startms < 3000)
+		return;
+	# Collect tracked clients in bottom-to-top z-order so restore preserves stacking
+	ordered: list of ref AppInfo;
+	for(z := wmsrv->top(); z != nil; z = z.znext){
+		ai := findappinfo(z.id);
+		if(ai != nil && ai.cmd != nil && ai.cmd != "" && ai.hasr)
+			ordered = ai :: ordered;
+	}
+	# Ensure parent directory exists
+	slash := -1;
+	for(i := len sessionpath - 1; i >= 0; i--){
+		if(sessionpath[i] == '/'){
+			slash = i;
+			break;
+		}
+	}
+	if(slash > 0)
+		sys->create(sessionpath[0:slash], Sys->OREAD, Sys->DMDIR | 8r755);
+
+	fd := sys->create(sessionpath, Sys->OWRITE, 8r644);
+	if(fd == nil)
+		return;
+	out := "# Saved Inferno desktop session\n";
+	for(l := ordered; l != nil; l = tl l){
+		ai := hd l;
+		out += sys->sprint("{pctl forkenv; wmgeom='%s'; %s}\n", r2s(ai.r), ai.cmd);
+	}
+	b := array of byte out;
+	sys->write(fd, b, len b);
+}
+
 reshape(c: ref Client, tag: string, r: Rect): string
 {
 	w := c.window(tag);
@@ -620,6 +742,10 @@ reshape(c: ref Client, tag: string, r: Rect): string
 	# to the top of the stack.
 	if((c.flags & Sticky) == 0)
 		c.top();
+	if(tag == "."){
+		if(updateapprect(c.id, r))
+			savesession();
+	}
 	return nil;
 }
 
@@ -754,9 +880,9 @@ fitrect(w, r: Rect): Rect
 		w.max.y = w.min.y + r.dy();
 	size := w.size();
 	if (w.max.x > r.max.x)
-		(w.min.x, w.max.x) = (r.min.x - size.x, r.max.x - size.x);
+		(w.min.x, w.max.x) = (r.max.x - size.x, r.max.x);
 	if (w.max.y > r.max.y)
-		(w.min.y, w.max.y) = (r.min.y - size.y, r.max.y - size.y);
+		(w.min.y, w.max.y) = (r.max.y - size.y, r.max.y);
 	if (w.min.x < r.min.x)
 		(w.min.x, w.max.x) = (r.min.x, r.min.x + size.x);
 	if (w.min.y < r.min.y)

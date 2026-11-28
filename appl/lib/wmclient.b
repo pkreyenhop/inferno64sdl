@@ -17,6 +17,7 @@ include "wmlib.m";
 	qword, splitqword, s2r: import wmlib;
 include "titlebar.m";
 	titlebar: Titlebar;
+include "env.m";
 include "wmclient.m";
 
 Focusnone, Focusimage, Focustitle: con iota;
@@ -98,6 +99,14 @@ window(ctxt: ref Draw->Context, title: string, buts: int): ref Window
 	titlebar->settitle(top, title);
 	sizetb(w);
 	w.wmctl("fixedorigin");
+	e := load Env Env->PATH;
+	if(e != nil){
+		wc := e->getenv("wmcmd");
+		if(wc != nil && wc != ""){
+			e->setenv("wmcmd", "");
+			w.wmctl(sys->sprint("appcmd %q", wc));
+		}
+	}
 	return w;
 }
 
@@ -221,6 +230,18 @@ readscreenrect(w: ref Window)
 
 Window.onscreen(w: self ref Window, how: string)
 {
+	e := load Env Env->PATH;
+	if(e != nil){
+		g := e->getenv("wmgeom");
+		if(g != nil && g != ""){
+			e->setenv("wmgeom", "");
+			(gr, nil) := s2r(g, 0);
+			if(gr.dx() >= 100 && gr.dy() >= 80)
+				w.r = gr;
+			w.wmctl(sys->sprint("!reshape . -1 %s onscreen", r2s(w.r)));
+			return;
+		}
+	}
 	if(how == nil)
 		how = "place";
 	w.wmctl(sys->sprint("!reshape . -1 %s %q", r2s(w.r), how));

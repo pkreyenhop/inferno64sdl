@@ -16,6 +16,10 @@ fn wmrun {
 	args := $*
 	{
 		pctl newpgrp
+		pctl forkenv
+		if {! ~ ${hd $args} wm/pinboard wm/toolbar} {
+			wmcmd = 'wmrun ' ^ $"args
+		}
 		fn wmrun
 		$args
 	} > /chan/wmstdout >[2] /chan/wmstderr &
@@ -45,8 +49,12 @@ fn cd {
 
 plumber -v /lib/plumbing >/chan/wmstdout >[2=1]
 wmrun wm/pinboard
-wmapp /Apps/!Acme
-wmapp /Apps/!Shell
+if {ftest -f $home/lib/wmsession} {
+	run $home/lib/wmsession
+} {
+	wmapp /Apps/!Acme
+	wmapp /Apps/!Shell
+}
 menu Shell			{wmapp /Apps/!Shell}
 menu Acme			{wmapp /Apps/!Acme}
 menu Edit			{wmapp /Apps/!Edit}

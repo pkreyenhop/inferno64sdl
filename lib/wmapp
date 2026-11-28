@@ -38,6 +38,10 @@ if {! ftest -f $approot ^ '/!Boot'} {
 pctl forkenv
 
 approot = $approot
+wmcmd = 'wmapp ' ^ $approot
+for a in $extra {
+	wmcmd = $wmcmd ^ ' ' ^ $a
+}
 base := `{basename $approot}
 iconp := $approot ^ '/icons/' ^ $base ^ '.bit'
 if {ftest -f $iconp} {
