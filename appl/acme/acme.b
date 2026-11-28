@@ -66,8 +66,8 @@ fontcache : array of ref Reffont;
 nfontcache : int;
 reffonts : array of ref Reffont;
 deffontnames := array[2] of {
-	"/fonts/vera/verabd/verabd.16.font",
-	"/fonts/vera/veramobd/veramobd.16.font",
+	"/fonts/vera/vera/vera.18.font",
+	"/fonts/vera/veramono/veramono.18.font",
 };
 
 command : ref Command;
@@ -959,20 +959,20 @@ iconinit()
 	r : Rect;
 
 	# Blue
+	# Neutral Modern Light tag & body palette
 	tagcols = array[NCOL] of ref Draw->Image;
-	tagcols[BACK] = display.colormix(Draw->Palebluegreen, Draw->White);
-	tagcols[HIGH] = display.color(Draw->Palegreygreen);
-	tagcols[BORD] = display.color(Draw->Purpleblue);
-	tagcols[TEXT] = black;
-	tagcols[HTEXT] = black;
+	tagcols[BACK] = display.color(int 16rf4f4f5ff);
+	tagcols[HIGH] = display.color(int 16re4e4e7ff);
+	tagcols[BORD] = display.color(int 16rd4d4d8ff);
+	tagcols[TEXT] = display.color(int 16r18181bff);
+	tagcols[HTEXT] = display.color(int 16r18181bff);
 
-	# Yellow
 	textcols = array[NCOL] of ref Draw->Image;
-	textcols[BACK] = display.colormix(Draw->Paleyellow, Draw->White);
-	textcols[HIGH] = display.color(Draw->Darkyellow);
-	textcols[BORD] = display.color(Draw->Yellowgreen); 
-	textcols[TEXT] = black;
-	textcols[HTEXT] = black;
+	textcols[BACK] = display.white;
+	textcols[HIGH] = display.color(int 16rdbeafeff);
+	textcols[BORD] = display.color(int 16rd4d4d8ff);
+	textcols[TEXT] = display.color(int 16r18181bff);
+	textcols[HTEXT] = display.color(int 16r18181bff);
 
 	if(button != nil)
 		button = modbutton = colbutton = nil;

@@ -6,10 +6,10 @@
 
 enum
 {
-	/* Clean Light Minimal palette */
-	tkBackR		= 0xf1,		/* Background base color (#f1f5f9) */
-	tkBackG 	= 0xf5,
-	tkBackB 	= 0xf9,
+	/* Neutral Modern Light palette (zinc/neutral whites + crisp blue accent) */
+	tkBackR		= 0xf4,		/* Chrome / surface (#f4f4f5) */
+	tkBackG 	= 0xf4,
+	tkBackB 	= 0xf5,
 
 	tkSelectR	= 0x25,		/* Check box / radio selected (#2563eb) */
 	tkSelectG	= 0x63,
@@ -33,25 +33,25 @@ static Coltab coltab[] =
 		RGB(tkBackR, tkBackG, tkBackB),
 		TkSameshade,
 	TkCbackgndlght,
-		RGB(0xcb, 0xd5, 0xe1),
+		RGB(0xe4, 0xe4, 0xe7),
 		TkSameshade,
 	TkCbackgnddark,
-		RGB(0x94, 0xa3, 0xb8),
+		RGB(0xd4, 0xd4, 0xd8),
 		TkSameshade,
 	TkCactivebgnd,
-		RGB(0xe2, 0xe8, 0xf0),
+		RGB(0xe4, 0xe4, 0xe7),
 		TkSameshade,
 	TkCactivebgndlght,
-		RGB(0xcb, 0xd5, 0xe1),
+		RGB(0xd4, 0xd4, 0xd8),
 		TkSameshade,
 	TkCactivebgnddark,
-		RGB(0x94, 0xa3, 0xb8),
+		RGB(0xa1, 0xa1, 0xaa),
 		TkSameshade,
 	TkCactivefgnd,
-		RGB(0x0f, 0x17, 0x2a),
+		RGB(0x18, 0x18, 0x1b),
 		TkSameshade,
 	TkCforegnd,
-		RGB(0x0f, 0x17, 0x2a),
+		RGB(0x18, 0x18, 0x1b),
 		TkSameshade,
 	TkCselect,
 		RGB(tkSelectR, tkSelectG, tkSelectB),
@@ -69,7 +69,7 @@ static Coltab coltab[] =
 		RGB(0xff, 0xff, 0xff),
 		TkSameshade,
 	TkCdisablefgnd,
-		RGB(0x94, 0xa3, 0xb8),
+		RGB(0xa1, 0xa1, 0xaa),
 		TkSameshade,
 	TkChighlightfgnd,
 		RGB(0x25, 0x63, 0xeb),

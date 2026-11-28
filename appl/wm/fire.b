@@ -20,9 +20,9 @@ MNT: con "/mnt/sheet";
 ADDR_FILE: con "/tmp/sheet.addr";
 DEF_ADDR: con "tcp!127.0.0.1!19900";
 
-FONT_UI:   con "/fonts/vera/verabd/verabd.16.font";
+FONT_UI:   con "/fonts/vera/vera/vera.18.font";
 FONT_BIG:  con "/fonts/vera/verabd/verabd.20.font";
-FONT_MONO: con "/fonts/vera/veramobd/veramobd.16.font";
+FONT_MONO: con "/fonts/vera/veramono/veramono.18.font";
 
 # Original values captured on connect for Reset
 orig_growth := 10.0;
@@ -352,96 +352,96 @@ run_sweep_wr(top: ref Tk->Toplevel)
 }
 
 tkcfg := array[] of {
-	"frame .hdr -bg #f8fafc -bd 6",
-	"label .hdr.t -text {FIRE Scenario Explorer} -bg #f8fafc -fg #0f172a -font " + FONT_BIG,
-	"pack .hdr.t -side left -padx 6",
-	"button .hdr.conn -text {Connect} -bg #f1f5f9 -fg #0f172a -font " + FONT_UI + " -command {send cmd connect}",
-	"pack .hdr.conn -side right -padx 4",
+	"frame .hdr -bg #ffffff -bd 8",
+	"label .hdr.t -text {FIRE Scenario Explorer} -bg #ffffff -fg #18181b -font " + FONT_BIG,
+	"pack .hdr.t -side left -padx 8",
+	"button .hdr.conn -text {Connect} -bg #f4f4f5 -fg #18181b -font " + FONT_UI + " -padx 10 -pady 4 -command {send cmd connect}",
+	"pack .hdr.conn -side right -padx 6",
 	"pack .hdr -fill x",
 
-	"label .st -text {Connecting to /mnt/sheet...} -anchor w -font " + FONT_UI + " -bg #f1f5f9 -padx 8 -pady 4",
+	"label .st -text {Connecting to /mnt/sheet...} -anchor w -font " + FONT_UI + " -bg #f4f4f5 -fg #52525b -padx 10 -pady 6",
 	"pack .st -fill x",
 
 	# Presets bar
-	"frame .pre -bg #e2e8f0 -bd 4",
-	"label .pre.l -text {Presets:} -bg #e2e8f0 -font " + FONT_UI,
-	"button .pre.b1 -text {Base} -font " + FONT_UI + " -command {send cmd pre_base}",
-	"button .pre.b2 -text {Conservative} -font " + FONT_UI + " -command {send cmd pre_cons}",
-	"button .pre.b3 -text {High Infl} -font " + FONT_UI + " -command {send cmd pre_infl}",
-	"button .pre.b4 -text {Fat FIRE} -font " + FONT_UI + " -command {send cmd pre_fat}",
-	"button .pre.b5 -text {Lean FIRE} -font " + FONT_UI + " -command {send cmd pre_lean}",
-	"button .pre.rst -text {Reset} -font " + FONT_UI + " -command {send cmd reset}",
-	"pack .pre.l .pre.b1 .pre.b2 .pre.b3 .pre.b4 .pre.b5 .pre.rst -side left -padx 3 -pady 2",
+	"frame .pre -bg #f4f4f5 -bd 6",
+	"label .pre.l -text {Presets:} -bg #f4f4f5 -fg #52525b -font " + FONT_UI,
+	"button .pre.b1 -text {Base} -bg white -fg #18181b -font " + FONT_UI + " -padx 8 -pady 3 -command {send cmd pre_base}",
+	"button .pre.b2 -text {Conservative} -bg white -fg #18181b -font " + FONT_UI + " -padx 8 -pady 3 -command {send cmd pre_cons}",
+	"button .pre.b3 -text {High Infl} -bg white -fg #18181b -font " + FONT_UI + " -padx 8 -pady 3 -command {send cmd pre_infl}",
+	"button .pre.b4 -text {Fat FIRE} -bg white -fg #18181b -font " + FONT_UI + " -padx 8 -pady 3 -command {send cmd pre_fat}",
+	"button .pre.b5 -text {Lean FIRE} -bg white -fg #18181b -font " + FONT_UI + " -padx 8 -pady 3 -command {send cmd pre_lean}",
+	"button .pre.rst -text {Reset} -bg white -fg #18181b -font " + FONT_UI + " -padx 8 -pady 3 -command {send cmd reset}",
+	"pack .pre.l .pre.b1 .pre.b2 .pre.b3 .pre.b4 .pre.b5 .pre.rst -side left -padx 4 -pady 2",
 	"pack .pre -fill x",
 
 	# Inputs frame
-	"frame .in -bg white -bd 6",
+	"frame .in -bg white -bd 8",
 
 	"frame .in.g -bg white",
-	"label .in.g.l -text {Stock Growth} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.g.s -orient horizontal -from 8 -to 28 -showvalue 0 -length 280 -command {send cmd sg}",
-	"label .in.g.v -text {10%} -width 95 -anchor e -bg white -font " + FONT_UI,
-	"pack .in.g.l .in.g.s .in.g.v -side left -padx 6 -pady 4",
+	"label .in.g.l -text {Stock Growth} -width 185 -anchor w -bg white -fg #18181b -font " + FONT_UI,
+	"scale .in.g.s -orient horizontal -from 8 -to 28 -showvalue 0 -length 320 -command {send cmd sg}",
+	"label .in.g.v -text {10%} -width 110 -anchor e -bg white -fg #18181b -font " + FONT_UI,
+	"pack .in.g.l .in.g.s .in.g.v -side left -padx 8 -pady 5",
 	"pack .in.g -fill x",
 
 	"frame .in.i -bg white",
-	"label .in.i.l -text {Inflation} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.i.s -orient horizontal -from 2 -to 14 -showvalue 0 -length 280 -command {send cmd si}",
-	"label .in.i.v -text {3%} -width 95 -anchor e -bg white -font " + FONT_UI,
-	"pack .in.i.l .in.i.s .in.i.v -side left -padx 6 -pady 4",
+	"label .in.i.l -text {Inflation} -width 185 -anchor w -bg white -fg #18181b -font " + FONT_UI,
+	"scale .in.i.s -orient horizontal -from 2 -to 14 -showvalue 0 -length 320 -command {send cmd si}",
+	"label .in.i.v -text {3%} -width 110 -anchor e -bg white -fg #18181b -font " + FONT_UI,
+	"pack .in.i.l .in.i.s .in.i.v -side left -padx 8 -pady 5",
 	"pack .in.i -fill x",
 
 	"frame .in.w -bg white",
-	"label .in.w.l -text {Withdrawal Rate} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.w.s -orient horizontal -from 10 -to 24 -showvalue 0 -length 280 -command {send cmd sw}",
-	"label .in.w.v -text {4%} -width 95 -anchor e -bg white -font " + FONT_UI,
-	"pack .in.w.l .in.w.s .in.w.v -side left -padx 6 -pady 4",
+	"label .in.w.l -text {Withdrawal Rate} -width 185 -anchor w -bg white -fg #18181b -font " + FONT_UI,
+	"scale .in.w.s -orient horizontal -from 10 -to 24 -showvalue 0 -length 320 -command {send cmd sw}",
+	"label .in.w.v -text {4%} -width 110 -anchor e -bg white -fg #18181b -font " + FONT_UI,
+	"pack .in.w.l .in.w.s .in.w.v -side left -padx 8 -pady 5",
 	"pack .in.w -fill x",
 
 	"frame .in.sp -bg white",
-	"label .in.sp.l -text {Annual Spending} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.sp.s -orient horizontal -from 12 -to 44 -showvalue 0 -length 280 -command {send cmd ssp}",
-	"label .in.sp.v -text {$120,000} -width 95 -anchor e -bg white -font " + FONT_UI,
-	"pack .in.sp.l .in.sp.s .in.sp.v -side left -padx 6 -pady 4",
+	"label .in.sp.l -text {Annual Spending} -width 185 -anchor w -bg white -fg #18181b -font " + FONT_UI,
+	"scale .in.sp.s -orient horizontal -from 12 -to 44 -showvalue 0 -length 320 -command {send cmd ssp}",
+	"label .in.sp.v -text {$120,000} -width 110 -anchor e -bg white -fg #18181b -font " + FONT_UI,
+	"pack .in.sp.l .in.sp.s .in.sp.v -side left -padx 8 -pady 5",
 	"pack .in.sp -fill x",
 
 	"pack .in -fill x",
 
 	# Live outputs card
-	"frame .out -bg #f8fafc -bd 2 -relief groove",
-	"frame .out.rg -bg #f8fafc",
-	"label .out.rg.l -text {Real Stock Market Growth:} -width 230 -anchor w -bg #f8fafc -font " + FONT_UI,
-	"label .out.rg.v -text {-} -width 175 -anchor w -bg #f8fafc -fg #1e40af -font " + FONT_UI,
-	"pack .out.rg.l .out.rg.v -side left -padx 8 -pady 4",
+	"frame .out -bg #f4f4f5 -bd 1 -relief groove",
+	"frame .out.rg -bg #f4f4f5",
+	"label .out.rg.l -text {Real Stock Market Growth:} -width 280 -anchor w -bg #f4f4f5 -fg #52525b -font " + FONT_UI,
+	"label .out.rg.v -text {-} -width 180 -anchor w -bg #f4f4f5 -fg #2563eb -font " + FONT_UI,
+	"pack .out.rg.l .out.rg.v -side left -padx 10 -pady 5",
 	"pack .out.rg -fill x",
 
-	"frame .out.b1 -bg #f8fafc",
-	"label .out.b1.l -text {1st Batch Runs Out:} -width 230 -anchor w -bg #f8fafc -font " + FONT_UI,
-	"label .out.b1.p1 -text {P1: -} -width 185 -anchor w -bg #f8fafc -font " + FONT_UI,
-	"label .out.b1.p2 -text {P2: -} -width 185 -anchor w -bg #f8fafc -font " + FONT_UI,
-	"pack .out.b1.l .out.b1.p1 .out.b1.p2 -side left -padx 8 -pady 4",
+	"frame .out.b1 -bg #f4f4f5",
+	"label .out.b1.l -text {1st Batch Runs Out:} -width 280 -anchor w -bg #f4f4f5 -fg #52525b -font " + FONT_UI,
+	"label .out.b1.p1 -text {P1: -} -width 210 -anchor w -bg #f4f4f5 -font " + FONT_UI,
+	"label .out.b1.p2 -text {P2: -} -width 210 -anchor w -bg #f4f4f5 -font " + FONT_UI,
+	"pack .out.b1.l .out.b1.p1 .out.b1.p2 -side left -padx 10 -pady 5",
 	"pack .out.b1 -fill x",
 
-	"frame .out.ba -bg #f8fafc",
-	"label .out.ba.l -text {All Investments Run Out:} -width 230 -anchor w -bg #f8fafc -font " + FONT_UI,
-	"label .out.ba.p1 -text {P1: -} -width 185 -anchor w -bg #f8fafc -font " + FONT_UI,
-	"label .out.ba.p2 -text {P2: -} -width 185 -anchor w -bg #f8fafc -font " + FONT_UI,
-	"pack .out.ba.l .out.ba.p1 .out.ba.p2 -side left -padx 8 -pady 4",
+	"frame .out.ba -bg #f4f4f5",
+	"label .out.ba.l -text {All Investments Run Out:} -width 280 -anchor w -bg #f4f4f5 -fg #52525b -font " + FONT_UI,
+	"label .out.ba.p1 -text {P1: -} -width 210 -anchor w -bg #f4f4f5 -font " + FONT_UI,
+	"label .out.ba.p2 -text {P2: -} -width 210 -anchor w -bg #f4f4f5 -font " + FONT_UI,
+	"pack .out.ba.l .out.ba.p1 .out.ba.p2 -side left -padx 10 -pady 5",
 	"pack .out.ba -fill x",
-	"pack .out -fill x -padx 6 -pady 6",
+	"pack .out -fill x -padx 10 -pady 8",
 
 	# Sweep buttons + output table
-	"frame .swb -bg #e2e8f0 -bd 4",
-	"label .swb.l -text {Sensitivity Sweep:} -bg #e2e8f0 -font " + FONT_UI,
-	"button .swb.sp -text {Sweep Spending} -font " + FONT_UI + " -command {send cmd sweep_spend}",
-	"button .swb.gr -text {Sweep Growth} -font " + FONT_UI + " -command {send cmd sweep_growth}",
-	"button .swb.wr -text {Sweep Withdrawal} -font " + FONT_UI + " -command {send cmd sweep_wr}",
-	"pack .swb.l .swb.sp .swb.gr .swb.wr -side left -padx 4 -pady 2",
+	"frame .swb -bg #f4f4f5 -bd 6",
+	"label .swb.l -text {Sensitivity Sweep:} -bg #f4f4f5 -fg #52525b -font " + FONT_UI,
+	"button .swb.sp -text {Sweep Spending} -bg white -fg #18181b -font " + FONT_UI + " -padx 10 -pady 4 -command {send cmd sweep_spend}",
+	"button .swb.gr -text {Sweep Growth} -bg white -fg #18181b -font " + FONT_UI + " -padx 10 -pady 4 -command {send cmd sweep_growth}",
+	"button .swb.wr -text {Sweep Withdrawal} -bg white -fg #18181b -font " + FONT_UI + " -padx 10 -pady 4 -command {send cmd sweep_wr}",
+	"pack .swb.l .swb.sp .swb.gr .swb.wr -side left -padx 5 -pady 2",
 	"pack .swb -fill x",
 
 	"frame .sw -bg white",
-	"text .sw.t -width 680 -height 220 -bg white -fg #0f172a -font " + FONT_MONO,
-	"pack .sw.t -fill both -expand 1 -padx 6 -pady 6",
+	"text .sw.t -width 760 -height 260 -bg white -fg #18181b -font " + FONT_MONO,
+	"pack .sw.t -fill both -expand 1 -padx 10 -pady 8",
 	"pack .sw -fill both -expand 1",
 	"update",
 };

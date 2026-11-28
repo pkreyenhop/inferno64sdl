@@ -21,8 +21,8 @@ include "wmclient.m";
 
 Focusnone, Focusimage, Focustitle: con iota;
 
-Bdup: con int 16r94a3b8ff;
-Bddown: con int 16r94a3b8ff;
+Bdup: con int 16rd4d4d8ff;
+Bddown: con int 16rd4d4d8ff;
 
 init()
 {

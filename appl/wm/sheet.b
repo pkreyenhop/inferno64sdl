@@ -1341,11 +1341,11 @@ run_selftest(b: ref Book)
 # Interactive wmclient GUI
 # ---------------------------------------------------------------------------
 
-BAR_H:  con 34;
-TAB_H:  con 32;
-HDR_H:  con 28;
-ROW_H:  con 28;
-ROWH_W: con 54;
+BAR_H:  con 38;
+TAB_H:  con 36;
+HDR_H:  con 32;
+ROW_H:  con 32;
+ROWH_W: con 58;
 SB_W:   con 16;
 
 c_bg, c_hdr, c_grid, c_text, c_sel, c_selbg, c_tab, c_tabact, c_editbg, c_sb, c_thumb: ref Image;
@@ -1358,16 +1358,16 @@ charw: int;
 initcolors(d: ref Display)
 {
 	c_bg     = d.white;
-	c_hdr    = d.color(int 16re8e8e8ff);
-	c_grid   = d.color(int 16rb8b8b8ff);
-	c_text   = d.black;
-	c_sel    = d.color(int 16r1a66ccff);
-	c_selbg  = d.color(int 16re6f0ffff);
-	c_tab    = d.color(int 16rdcdcdcff);
+	c_hdr    = d.color(int 16rf4f4f5ff);
+	c_grid   = d.color(int 16re4e4e7ff);
+	c_text   = d.color(int 16r18181bff);
+	c_sel    = d.color(int 16r2563ebff);
+	c_selbg  = d.color(int 16reff6ffff);
+	c_tab    = d.color(int 16rf4f4f5ff);
 	c_tabact = d.white;
-	c_editbg = d.color(int 16rfffbe6ff);
-	c_sb     = d.color(int 16rf0f0f0ff);
-	c_thumb  = d.color(int 16rb0b0b0ff);
+	c_editbg = d.color(int 16rfffbebff);
+	c_sb     = d.color(int 16rf4f4f5ff);
+	c_thumb  = d.color(int 16rd4d4d8ff);
 	bufimg   = nil;
 	bufw     = 0;
 	bufh     = 0;
@@ -1376,9 +1376,9 @@ initcolors(d: ref Display)
 	prev_left_c = -1;
 	prev_cur_r = -1;
 	prev_cur_c = -1;
-	font     = Font.open(d, "/fonts/vera/verabd/verabd.16.font");
+	font     = Font.open(d, "/fonts/vera/vera/vera.18.font");
 	if(font == nil)
-		font = Font.open(d, "/fonts/vera/vera/vera.16.font");
+		font = Font.open(d, "/fonts/vera/verabd/verabd.16.font");
 	if(font == nil)
 		font = Font.open(d, "*default*");
 	charw = 9;
