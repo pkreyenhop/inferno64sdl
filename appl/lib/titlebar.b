@@ -46,39 +46,41 @@ new(top: ref Tk->Toplevel, buts: int): chan of string
 
 	bstyle := " -font " + TB_BTN + " -bg #52525b -fg #e4e4e7 -activebackground #3f3f46 -activeforeground #ffffff -relief flat -bd 0 -width 30 -height 26 -takefocus 0";
 
-	fin := ".Wm_t configure -bg #27272a;.Wm_t.title configure -bg #27272a -fg #ffffff;.Wm_t.e configure -bg #27272a -fg #e4e4e7";
-	fout := ".Wm_t configure -bg #52525b;.Wm_t.title configure -bg #52525b -fg #e4e4e7;.Wm_t.e configure -bg #52525b -fg #d4d4d8";
+	cmd(top, "bind . <FocusIn> {.Wm_t configure -bg #27272a;.Wm_t.title configure -bg #27272a -fg #ffffff}");
+	cmd(top, "bind . <FocusOut> {.Wm_t configure -bg #52525b;.Wm_t.title configure -bg #52525b -fg #e4e4e7}");
+	cmd(top, "bind . <FocusIn> {+.Wm_t.e configure -bg #27272a -fg #e4e4e7}");
+	cmd(top, "bind . <FocusOut> {+.Wm_t.e configure -bg #52525b -fg #d4d4d8}");
 
 	if(buts & OK){
 		cmd(top, "button .Wm_t.ok -text {OK}" + bstyle +
 			" -command {send wm_title ok}; pack .Wm_t.ok -side right -padx 2 -pady 3");
-		fin += ";.Wm_t.ok configure -bg #27272a -fg #e4e4e7";
-		fout += ";.Wm_t.ok configure -bg #52525b -fg #d4d4d8";
+		cmd(top, "bind . <FocusIn> {+.Wm_t.ok configure -bg #27272a -fg #e4e4e7}");
+		cmd(top, "bind . <FocusOut> {+.Wm_t.ok configure -bg #52525b -fg #d4d4d8}");
 	}
 
 	if(buts & Hide){
 		cmd(top, "button .Wm_t.top -text {-}" + bstyle +
 			" -command {send wm_title task}; pack .Wm_t.top -side right -padx 2 -pady 3");
-		fin += ";.Wm_t.top configure -bg #27272a -fg #e4e4e7";
-		fout += ";.Wm_t.top configure -bg #52525b -fg #d4d4d8";
+		cmd(top, "bind . <FocusIn> {+.Wm_t.top configure -bg #27272a -fg #e4e4e7}");
+		cmd(top, "bind . <FocusOut> {+.Wm_t.top configure -bg #52525b -fg #d4d4d8}");
 	}
 
 	if(buts & Resize){
 		cmd(top, "button .Wm_t.m -text {+}" + bstyle +
 			" -command {send wm_title size}; pack .Wm_t.m -side right -padx 2 -pady 3");
-		fin += ";.Wm_t.m configure -bg #27272a -fg #e4e4e7";
-		fout += ";.Wm_t.m configure -bg #52525b -fg #d4d4d8";
+		cmd(top, "bind . <FocusIn> {+.Wm_t.m configure -bg #27272a -fg #e4e4e7}");
+		cmd(top, "bind . <FocusOut> {+.Wm_t.m configure -bg #52525b -fg #d4d4d8}");
 	}
 
 	if(buts & Help){
 		cmd(top, "button .Wm_t.h -text {?}" + bstyle +
 			" -command {send wm_title help}; pack .Wm_t.h -side right -padx 2 -pady 3");
-		fin += ";.Wm_t.h configure -bg #27272a -fg #e4e4e7";
-		fout += ";.Wm_t.h configure -bg #52525b -fg #d4d4d8";
+		cmd(top, "bind . <FocusIn> {+.Wm_t.h configure -bg #27272a -fg #e4e4e7}");
+		cmd(top, "bind . <FocusOut> {+.Wm_t.h configure -bg #52525b -fg #d4d4d8}");
 	}
 
-	cmd(top, "bind . <FocusIn> {" + fin + ";update}");
-	cmd(top, "bind . <FocusOut> {" + fout + ";update}");
+	cmd(top, "bind . <FocusIn> {+update}");
+	cmd(top, "bind . <FocusOut> {+update}");
 
 	# pack the title last so it gets clipped first
 	cmd(top, "pack .Wm_t.title -side left -fill x");
