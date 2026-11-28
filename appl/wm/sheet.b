@@ -3123,8 +3123,9 @@ init(ctxt: ref Draw->Context, argv: list of string)
 			shutdown_sheetfs(mountpt);
 			exit;
 		}
+		oldimg := win.image;
 		win.wmctl(ctl);
-		if(win.image != nil && (win.image.r.dx() != bufw || win.image.r.dy() != bufh))
+		if(win.image != nil && (win.image != oldimg || win.image.r.dx() != bufw || win.image.r.dy() != bufh))
 			redraw(win, book, cur_sheet, editing, editbuf, 1);
 
 	p := <-win.ctxt.ptr =>

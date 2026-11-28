@@ -157,7 +157,7 @@ putimage(w: ref Window, i: ref Image)
 	}
 	if(ir.dy() < 0)
 		ir.max.y = ir.min.y;
-	w.image = w.screen.newwindow(ir, Draw->Refnone, Draw->Nofill);
+	w.image = w.screen.newwindow(ir, Draw->Refnone, Draw->White);
 	drawborder(w);
 	w.r = i.r;
 }
