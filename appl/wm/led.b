@@ -457,10 +457,7 @@ rev_entries(l: list of ref DirEntry): list of ref DirEntry
 
 new_untitled()
 {
-	b := ref Buffer;
-	b.path = joinpath(curdir, "untitled.b");
-	b.name = "untitled.b";
-	b.lines = array[] of {
+	lines := array[] of {
 		"implement Untitled;",
 		"",
 		"include \"sys.m\";",
@@ -477,7 +474,7 @@ new_untitled()
 		"\tsys->print(\"hello from Limbo!\\n\");",
 		"}"
 	};
-	b.dirty = 1;
+	b := ref Buffer(joinpath(curdir, "untitled.b"), "untitled.b", lines, 1, 0, 0, 0, 0, 0, 0, 0);
 	add_tab(b);
 }
 
@@ -505,19 +502,17 @@ open_file(path: string): int
 	}
 	io.close();
 
-	b := ref Buffer;
-	b.path = path;
-	b.name = basename(path);
+	lines: array of string;
 	if(cnt == 0){
-		b.lines = array[1] of {""};
+		lines = array[1] of {""};
 	} else {
-		b.lines = array[cnt] of string;
+		lines = array[cnt] of string;
 		for(j := cnt - 1; j >= 0; j--){
-			b.lines[j] = hd ll;
+			lines[j] = hd ll;
 			ll = tl ll;
 		}
 	}
-	b.dirty = 0;
+	b := ref Buffer(path, basename(path), lines, 0, 0, 0, 0, 0, 0, 0, 0);
 	add_tab(b);
 	return 1;
 }

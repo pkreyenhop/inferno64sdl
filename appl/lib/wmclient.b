@@ -346,9 +346,10 @@ Window.settitle(w: self ref Window, title: string): string
 	oldr := w.imager(w.r);
 	old := titlebar->settitle(w.titlebar, title);
 	sizetb(w);
-	if(w.tbsize.x < w.r.dx())
+	if(w.tbsize.x < w.r.dx()){
 		tk->putimage(w.titlebar, ".", w.titlebar.image, nil);	# unsuspend the window
-	else
+		tk->cmd(w.titlebar, "update");
+	}else
 		w.wmctl("!reshape . -1 " + r2s(w.screenr(oldr)));
 	return old;
 }
