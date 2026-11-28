@@ -36,6 +36,13 @@ fakekbd: chan of string;
 fakekbdin: chan of string;
 buttons := 0;
 
+SavedRect: adt {
+	cid: int;
+	tag: string;
+	r: Rect;
+};
+savedrects: list of ref SavedRect;
+
 badmodule(p: string)
 {
 	sys->fprint(sys->fildes(2), "wm: cannot load %s: %r\n", p);
@@ -161,6 +168,7 @@ init(ctxt: ref Draw->Context, argv: list of string)
 		# if client leaving
 		if(rc == nil){
 			c.remove();
+			clearsavedrects(c.id);
 			if(c.stop == nil)
 				break;
 			if(c == ptrfocus)
@@ -343,7 +351,7 @@ handlerequest(win: ref Wmclient->Window, wmctxt: ref Wmcontext, c: ref Client, r
 		}else{
 			if(n != 5)
 				return "bad arg count";
-			sizewin(wmctxt.ptr, c, w, Point(int hd args, int hd tl args));
+			return togglemaxwin(c, w);
 		}
 
 	"fixedorigin" =>
@@ -521,41 +529,77 @@ trycornerresize(ptrc: chan of ref Pointer, c: ref Client, p: ref Pointer): int
 	return 1;
 }
 
-sizewin(ptrc: chan of ref Pointer, c: ref Client, w: ref Window, minsize: Point): string
+maxrect(): Rect
 {
-	borders := array[4] of ref Image;
-	showborders(borders, w.r, Minx|Maxx|Miny|Maxy);
-	screen.image.flush(Draw->Flushnow);
-	while((ptr := <-ptrc).buttons == 0)
-		;
-	xy := ptr.xy;
-	move, show: int;
-	offset := Point(0, 0);
-	r := w.r;
-	show = Minx|Miny|Maxx|Maxy;
-	if(xy.in(w.r) == 0){
-		r = (xy, xy);
-		move = Maxx|Maxy;
-	}else {
-		if(xy.x < (r.min.x+r.max.x)/2){
-			move=Minx;
-			offset.x = xy.x - r.min.x;
-		}else{
-			move=Maxx;
-			offset.x = xy.x - r.max.x;
-		}
-		if(xy.y < (r.min.y+r.max.y)/2){
-			move |= Miny;
-			offset.y = xy.y - r.min.y;
-		}else{
-			move |= Maxy;
-			offset.y = xy.y - r.max.y;
+	r := screen.image.r;
+	if(controller != nil){
+		for(wl := controller.wins; wl != nil; wl = tl wl){
+			cw := hd wl;
+			if(cw.r.dy() > 0 && cw.r.dy() < r.dy() / 4){
+				if(cw.r.max.y >= r.max.y && cw.r.min.y < r.max.y)
+					r.max.y = cw.r.min.y;
+				else if(cw.r.min.y <= r.min.y && cw.r.max.y > r.min.y)
+					r.min.y = cw.r.max.y;
+			}
 		}
 	}
-	nr := sweep(ptrc, r, offset, borders, move, show, minsize);
-	borders = nil;
-	screen.image.flush(Draw->Flushnow);
-	return reshape(c, w.tag, nr);
+	return r;
+}
+
+findsavedrect(cid: int, tag: string): ref SavedRect
+{
+	for(l := savedrects; l != nil; l = tl l){
+		sr := hd l;
+		if(sr.cid == cid && sr.tag == tag)
+			return sr;
+	}
+	return nil;
+}
+
+setsavedrect(cid: int, tag: string, r: Rect)
+{
+	sr := findsavedrect(cid, tag);
+	if(sr != nil){
+		sr.r = r;
+		return;
+	}
+	savedrects = ref SavedRect(cid, tag, r) :: savedrects;
+}
+
+removesavedrect(cid: int, tag: string)
+{
+	nl: list of ref SavedRect;
+	for(l := savedrects; l != nil; l = tl l){
+		sr := hd l;
+		if(sr.cid != cid || sr.tag != tag)
+			nl = sr :: nl;
+	}
+	savedrects = nl;
+}
+
+clearsavedrects(cid: int)
+{
+	nl: list of ref SavedRect;
+	for(l := savedrects; l != nil; l = tl l){
+		sr := hd l;
+		if(sr.cid != cid)
+			nl = sr :: nl;
+	}
+	savedrects = nl;
+}
+
+togglemaxwin(c: ref Client, w: ref Window): string
+{
+	maxr := maxrect();
+	sr := findsavedrect(c.id, w.tag);
+	if(sr != nil && w.r.eq(maxr)){
+		nr := fitrect(sr.r, maxr);
+		removesavedrect(c.id, w.tag);
+		return reshape(c, w.tag, nr);
+	}
+	if(!w.r.eq(maxr))
+		setsavedrect(c.id, w.tag, w.r);
+	return reshape(c, w.tag, maxr);
 }
 
 reshape(c: ref Client, tag: string, r: Rect): string
