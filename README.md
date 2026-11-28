@@ -17,12 +17,19 @@ Inferno represents services, devices, network interfaces, and application state 
 - **Native SDL3 display backend** (`emu/port/win-sdl3.c`): runs natively on macOS (Metal) and Linux (Wayland/X11) without XQuartz, supporting native fullscreen, high-DPI scaling, UTF-8 text input, custom cursors, scroll wheel, coalesced mouse-motion/frame presentation for smooth dragging, host clipboard integration (`Cmd/Alt+C` copy and `Cmd/Alt+V` paste in Shell, Acme, and Sheet), Option/Cmd click emulation for 3-button mouse, and `Cmd+Q` to quit.
 - **Startup launcher (`./start-inferno.sh`)**: auto-detects OS/architecture, sets `ROOT`, `PATH`, and a 256 MB image pool (`-pimage=256m`) for high-resolution displays, supports in-place **Restart** from the Start menu, and launches `wm/wm` in native SDL3 fullscreen by default (with `--windowed` and `--shell` modes).
 
-### Desktop & Core 64-Bit Inferno Environment
+### Desktop, Modernized GUI & Window Manager (`wm/wm`)
 - **Hosted `emu` runtime** and **Limbo compiler (`limbo`)**, `mk`, `iyacc`, `ndate`, and full Dis userland (`appl/` -> `dis/`).
 - **Modern cryptography & TLS 1.3** (`tls.m`, `keyring.m`) and **SQLite** builtin bindings (`$Sqlite`).
+- **Neutral Modern Light GUI theme** (`libtk/colrs.c`, `libtk/utils.c`, `libtk/scale.c`, `appl/lib/titlebar.b`, `appl/wm/toolbar.b`, `appl/wm/pinboard.b`):
+  - Clean 18 pt Bitstream Vera typography across widgets, menus, Shell, Acme, Sheet, and FIRE.
+  - Flat 1 px hairline borders, high-contrast dark charcoal focused (`#27272a`) / slate unfocused (`#52525b`) title bars, slim `#2563eb` accent sliders, and crisp neutral white/grey surfaces.
+  - Single-line taskbar buttons for minimized windows (`-`) with clean restore redraws.
+- **Modern window management (`appl/wm/wm.b`)**:
+  - **Direct corner & edge resizing**: grab any window corner or edge to sweep-resize directly.
+  - **Maximize / restore toggle (`+`)**: remembers the window's bounds and expands to fill the screen above the taskbar; clicking `+` again restores the previous size and position.
+  - **Automatic session persistence (`/usr/inferno/lib/wmsession`)**: automatically remembers open apps, exact window positions/sizes, and z-order across **Restart** and **Exit / reopen**.
 - **Pre-configured desktop (`lib/wmsetup`)**:
-  - **Acme** editor (opens automatically at 72% × 85% of the display)
-  - **Shell (`wm/sh`)** (rc-style Inferno shell, opens automatically on startup)
+  - Restores your last session from `/usr/inferno/lib/wmsession` (or opens **Acme** and **Shell** on first boot)
   - **Charon** browser (with TLS 1.3, HTML 4.01, and Gemini protocol support)
   - **Filer**, **Brutus** markdown editor, **Pinboard**, and RISC OS-style `!App` bundles in `Apps/`
   - **Restart** and **Exit** options in the starter menu for in-place restarts and clean shutdown (`echo halt > /dev/sysctl`)
@@ -107,12 +114,15 @@ After a `git pull`, rebuild quickly with `./build-linux.sh` (or `./build-linux.s
 
 | Path | Description |
 | :--- | :--- |
-| `start-inferno.sh` | Startup script (defaults to native SDL3 fullscreen `wm/wm`) |
+| `start-inferno.sh` | Startup script (defaults to native SDL3 fullscreen `wm/wm`, `-pimage=256m`, restart loop) |
+| `build-macos.sh`, `build-linux.sh` | Automated build scripts for macOS (`arm64`) and Linux (`amd64`/`arm64`) |
 | `emu/port/win-sdl3.c` | Shared native SDL3 display, input, cursor, and clipboard backend (macOS & Linux) |
+| `appl/wm/wm.b`, `appl/lib/titlebar.b`, `appl/wm/toolbar.b` | Window manager (corner/edge resize, `+` maximize toggle, session persistence), dark title bars, and taskbar |
+| `libtk/colrs.c`, `libtk/utils.c`, `libtk/scale.c` | Neutral Modern Light Tk theme, 1 px hairline reliefs, 18 pt default font, and slim sliders |
 | `libinterp/netsurf.c`, `module/netsurf.m`, `appl/wm/netsurf.b` | `$NetSurf` builtin module and `wm/netsurf` browser |
 | `libinterp/doom.c`, `module/doom.m`, `appl/wm/doom.b` | `$Doom` builtin module and `wm/doom` frontend |
 | `appl/wm/sheet.b`, `Apps/!Sheet/` | Native Limbo ODS spreadsheet app (`wm/sheet`) and `!App` bundle |
 | `appl/wm/fire.b`, `Apps/!Fire/` | FIRE Scenario Explorer GUI driving `wm/sheet` over 9P/Styx |
 | `appl/wm/mandelbrot.b` | Interactive graphical Mandelbrot viewer |
 | `appl/cmd/fib.b`, `appl/cmd/nsstress.b` | Recursive Fibonacci CLI and NetSurf Hacker News stress test |
-| `lib/wmsetup` | Desktop startup layout (Acme, Shell, Pinboard) and starter menu |
+| `lib/wmsetup`, `lib/wmapp` | Desktop startup, session restore (`/usr/inferno/lib/wmsession`), `!App` launcher, and Start menu |

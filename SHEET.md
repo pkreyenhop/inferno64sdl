@@ -106,7 +106,7 @@ Implements a recursive-descent parser and evaluator supporting both OpenFormula 
 
 ### 5. Rendering & Performance Architecture
 Designed to stay smooth even on large maximized displays (e.g. 2560×1440 with 1,000+ visible cells):
-- **Typography & Layout**: Uses bold Bitstream Vera Sans (`/fonts/vera/verabd/verabd.16.font`, 19 px) with generous row height (`ROW_H=28`), header/formula/tab bars, crisp `#b8b8b8` grid lines, and right-aligned numeric columns via `font.width()`.
+- **Typography & Layout**: Uses bold Bitstream Vera Sans (`/fonts/vera/verabd/verabd.18.font`) with generous row height (`ROW_H=30`), header/formula/tab bars, crisp `#d4d4d8` grid lines, `#2563eb` active cell highlight, and right-aligned numeric columns via `font.width()`.
 - **Offscreen Double-Buffering**: Renders into a window-sized offscreen `bufimg` (explicitly released before reallocation on resize) and flushes to `win.image` in one blit.
 - **Incremental Scroll Blitting**:
   - **Vertical scroll**: blits the overlapping rows inside `bufimg` with a single `img.draw()` and renders only the newly exposed row band (`draw_row_band`).
@@ -127,9 +127,9 @@ Designed to stay smooth even on large maximized displays (e.g. 2560×1440 with 1
 ### 1. Live Filesystem Layout (`/mnt/sheet`)
 
 - **New shells** opened from the Start menu after `wm/sheet` is running (or the shell that ran `wm/sheet &`) inherit `/mnt/sheet` automatically.
-- **Already-open shells / Acme windows** have their own forked namespaces (`FORKNS`). Attach them to the running `wm/sheet` instance at any time via its loopback Styx listener:
+- **Already-open shells / Acme windows** have their own forked namespaces (`FORKNS`). Attach them to the running `wm/sheet` instance at any time via its loopback Styx listener (dynamically bound to `tcp!127.0.0.1!19900..19919` and published to `/tmp/sheet.addr`, auto-mounted by `Apps/!Shell/!Run` and `Apps/!Acme/!Run`):
   ```sh
-  mount -A tcp!127.0.0.1!19900 /mnt/sheet
+  mount -A `{cat /tmp/sheet.addr} /mnt/sheet
   ```
 
 ```text
@@ -225,7 +225,7 @@ Supported cell types in `.s9`: `num`, `pct`, `str`, `fml`, and `empty` (to clear
 
 ### 5. Companion GUI: FIRE Scenario Explorer (`wm/fire` / `Apps/!Fire`)
 
-`wm/fire` (`appl/wm/fire.b`) is a standalone Limbo/Tk client that demonstrates driving `wm/sheet` purely over 9P/Styx (`tcp!127.0.0.1!19900` -> `/mnt/sheet`) with zero duplicated spreadsheet math:
+`wm/fire` (`appl/wm/fire.b`) is a standalone Limbo/Tk client that demonstrates driving `wm/sheet` purely over 9P/Styx (`/tmp/sheet.addr` -> `/mnt/sheet`) with zero duplicated spreadsheet math, non-blocking timed reconnects, and clean unmount on exit:
 - Launch from the Start menu (**FIRE**) or `/Apps/!Fire` while `Sheet` is open (or click **Connect** after opening `Sheet`).
 - Adjust **Stock Growth**, **Inflation**, **Withdrawal Rate**, and **Annual Spending** with live sliders or presets (`Base`, `Conservative`, `High Infl`, `Fat FIRE`, `Lean FIRE`, `Reset`) and watch both `FIRE Explorer` and `Sheet` update in real time.
 - Run one-click **Sweep Spending**, **Sweep Growth**, and **Sweep Withdrawal** sensitivity tables directly against `/mnt/sheet`.
