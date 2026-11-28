@@ -12,9 +12,9 @@ TB_FONT: con "/fonts/vera/verabd/verabd.18.font";
 TB_BTN:  con "/fonts/vera/vera/vera.18.font";
 
 title_cfg := array[] of {
-	"frame .Wm_t -bg #e2e2e6 -borderwidth 0",
-	"label .Wm_t.title -anchor w -bg #e2e2e6 -fg #52525b -font " + TB_FONT + " -padx 12 -pady 6",
-	"button .Wm_t.e -text {x} -font " + TB_BTN + " -bg #e2e2e6 -fg #3f3f46 -activebackground #fecaca -activeforeground #991b1b -relief flat -bd 0 -width 30 -height 26 -command {send wm_title exit} -takefocus 0",
+	"frame .Wm_t -bg #52525b -borderwidth 0",
+	"label .Wm_t.title -anchor w -bg #52525b -fg #e4e4e7 -font " + TB_FONT + " -padx 12 -pady 6",
+	"button .Wm_t.e -text {x} -font " + TB_BTN + " -bg #52525b -fg #e4e4e7 -activebackground #dc2626 -activeforeground #ffffff -relief flat -bd 0 -width 30 -height 26 -command {send wm_title exit} -takefocus 0",
 	"pack .Wm_t.e -side right -padx 4 -pady 3",
 	"bind .Wm_t <Button-1> {send wm_title move %X %Y}",
 	"bind .Wm_t <Double-Button-1> {send wm_title lower .}",
@@ -24,10 +24,6 @@ title_cfg := array[] of {
 	"bind .Wm_t.title <Double-Button-1> {send wm_title lower .}",
 	"bind .Wm_t.title <Motion-Button-1> {}",
 	"bind .Wm_t.title <Motion> {}",
-	"bind . <FocusIn> {.Wm_t configure -bg #ececef;"+
-		".Wm_t.title configure -bg #ececef -fg #09090b;update}",
-	"bind . <FocusOut> {.Wm_t configure -bg #e2e2e6;"+
-		".Wm_t.title configure -bg #e2e2e6 -fg #52525b;update}",
 };
 
 init()
@@ -48,23 +44,41 @@ new(top: ref Tk->Toplevel, buts: int): chan of string
 	for(i := 0; i < len title_cfg; i++)
 		cmd(top, title_cfg[i]);
 
-	bstyle := " -font " + TB_BTN + " -bg #e2e2e6 -fg #3f3f46 -activebackground #d4d4d8 -activeforeground #09090b -relief flat -bd 0 -width 30 -height 26 -takefocus 0";
+	bstyle := " -font " + TB_BTN + " -bg #52525b -fg #e4e4e7 -activebackground #3f3f46 -activeforeground #ffffff -relief flat -bd 0 -width 30 -height 26 -takefocus 0";
 
-	if(buts & OK)
+	fin := ".Wm_t configure -bg #27272a;.Wm_t.title configure -bg #27272a -fg #ffffff;.Wm_t.e configure -bg #27272a -fg #e4e4e7";
+	fout := ".Wm_t configure -bg #52525b;.Wm_t.title configure -bg #52525b -fg #e4e4e7;.Wm_t.e configure -bg #52525b -fg #d4d4d8";
+
+	if(buts & OK){
 		cmd(top, "button .Wm_t.ok -text {OK}" + bstyle +
 			" -command {send wm_title ok}; pack .Wm_t.ok -side right -padx 2 -pady 3");
+		fin += ";.Wm_t.ok configure -bg #27272a -fg #e4e4e7";
+		fout += ";.Wm_t.ok configure -bg #52525b -fg #d4d4d8";
+	}
 
-	if(buts & Hide)
+	if(buts & Hide){
 		cmd(top, "button .Wm_t.top -text {-}" + bstyle +
 			" -command {send wm_title task}; pack .Wm_t.top -side right -padx 2 -pady 3");
+		fin += ";.Wm_t.top configure -bg #27272a -fg #e4e4e7";
+		fout += ";.Wm_t.top configure -bg #52525b -fg #d4d4d8";
+	}
 
-	if(buts & Resize)
+	if(buts & Resize){
 		cmd(top, "button .Wm_t.m -text {+}" + bstyle +
 			" -command {send wm_title size}; pack .Wm_t.m -side right -padx 2 -pady 3");
+		fin += ";.Wm_t.m configure -bg #27272a -fg #e4e4e7";
+		fout += ";.Wm_t.m configure -bg #52525b -fg #d4d4d8";
+	}
 
-	if(buts & Help)
+	if(buts & Help){
 		cmd(top, "button .Wm_t.h -text {?}" + bstyle +
 			" -command {send wm_title help}; pack .Wm_t.h -side right -padx 2 -pady 3");
+		fin += ";.Wm_t.h configure -bg #27272a -fg #e4e4e7";
+		fout += ";.Wm_t.h configure -bg #52525b -fg #d4d4d8";
+	}
+
+	cmd(top, "bind . <FocusIn> {" + fin + ";update}");
+	cmd(top, "bind . <FocusOut> {" + fout + ";update}");
 
 	# pack the title last so it gets clipped first
 	cmd(top, "pack .Wm_t.title -side left -fill x");
