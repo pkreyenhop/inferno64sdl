@@ -70,7 +70,7 @@ SlotPad:  con 20;	# leave a margin around the screen edge
 
 # Inferno Tk only recognises a small fixed set of colour names; use
 # hex literals to avoid depending on additions to that table.
-Bgcolor:  con "#ebebee";	# Neutral modern light grey backdrop
+Bgcolor:  con "#dcdce2";	# Neutral modern light grey backdrop
 Selcolor: con "#2563eb";	# crisp blue selection outline
 
 Pin: adt

@@ -277,7 +277,7 @@ handlerequest(clientid: string, args: list of string): string
 iconify(id, label, iconpath: string)
 {
 	label = condenselabel(label);
-	e := tk->cmd(tbtop, "button .toolbar." +id+" -relief flat -bd 0 -bg #e4e4e7 -fg #18181b -activebackground #d4d4d8 -height 34 -padx 14 -command {send task "+id+"} -takefocus 0 ");
+	e := tk->cmd(tbtop, "button .toolbar." +id+" -relief flat -bd 0 -bg #d4d4d8 -fg #09090b -activebackground #c4c4cc -height 34 -padx 14 -command {send task "+id+"} -takefocus 0 ");
 	# When an icon path was supplied (via tkclient->seticon / $wmicon) and
 	# the bitmap registers cleanly, display it instead of the label text.
 	name := "";
@@ -341,7 +341,7 @@ layout(top: ref Tk->Toplevel)
 			" -y " + string (r.max.y - h) +
 			" -width " + string (r.dx()) +
 			" -height " + string h + 
-			" -bd 1 -relief flat -bg #d4d4d8");
+			" -bd 1 -relief flat -bg #a1a1aa");
 	cmd(top, "update");
 	tkclient->onscreen(tbtop, "exact");
 }
@@ -357,13 +357,13 @@ toolbar(ctxt: ref Draw->Context, startmenu: int,
 
 	tk->namechan(tbtop, exec, "exec");
 	tk->namechan(tbtop, task, "task");
-	cmd(tbtop, "frame .toolbar -height 50 -bg #f4f4f5");
+	cmd(tbtop, "frame .toolbar -height 50 -bg #ececef");
 	if (startmenu) {
-		cmd(tbtop, "menubutton .toolbar.start -text {Inferno} -font /fonts/vera/verabd/verabd.18.font -bg #18181b -fg white -activebackground #27272a -activeforeground white -relief flat -bd 0 -padx 18 -pady 8 -menu .m");
+		cmd(tbtop, "menubutton .toolbar.start -text {Inferno} -font /fonts/vera/verabd/verabd.18.font -bg #09090b -fg white -activebackground #27272a -activeforeground white -relief flat -bd 0 -padx 18 -pady 8 -menu .m");
 		cmd(tbtop, "pack .toolbar.start -side left -padx 10 -pady 7");
 	}
 	cmd(tbtop, "pack .toolbar -fill both");
-	cmd(tbtop, "menu .m -bg white -fg #18181b -activebackground #e4e4e7 -activeforeground #18181b -bd 1");
+	cmd(tbtop, "menu .m -bg white -fg #09090b -activebackground #dbeafe -activeforeground #09090b -bd 1");
 	return tbtop;
 }
 

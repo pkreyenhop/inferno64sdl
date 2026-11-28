@@ -1358,16 +1358,16 @@ charw: int;
 initcolors(d: ref Display)
 {
 	c_bg     = d.white;
-	c_hdr    = d.color(int 16rf4f4f5ff);
-	c_grid   = d.color(int 16re4e4e7ff);
-	c_text   = d.color(int 16r18181bff);
+	c_hdr    = d.color(int 16rececefff);
+	c_grid   = d.color(int 16rc8c8d0ff);
+	c_text   = d.color(int 16r09090bff);
 	c_sel    = d.color(int 16r2563ebff);
-	c_selbg  = d.color(int 16reff6ffff);
-	c_tab    = d.color(int 16rf4f4f5ff);
+	c_selbg  = d.color(int 16rdbeafeff);
+	c_tab    = d.color(int 16re4e4e7ff);
 	c_tabact = d.white;
-	c_editbg = d.color(int 16rfffbebff);
-	c_sb     = d.color(int 16rf4f4f5ff);
-	c_thumb  = d.color(int 16rd4d4d8ff);
+	c_editbg = d.color(int 16rfef3c7ff);
+	c_sb     = d.color(int 16rececefff);
+	c_thumb  = d.color(int 16ra1a1aaff);
 	bufimg   = nil;
 	bufw     = 0;
 	bufh     = 0;

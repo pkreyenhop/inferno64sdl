@@ -24,7 +24,7 @@ Ptrstarted, Kbdstarted, Controlstarted, Controller, Fixedorigin, Sticky: con 1<<
 Bdwidth: con 3;
 Sminx, Sminy, Smaxx, Smaxy: con iota;
 Minx, Miny, Maxx, Maxy: con 1<<iota;
-Background: con int 16rebebeeFF;
+Background: con int 16rdcdce2FF;
 
 screen: ref Screen;
 display: ref Display;
