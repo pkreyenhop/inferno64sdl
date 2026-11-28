@@ -8,7 +8,7 @@ include "tk.m";
 	tk: Tk;
 include "titlebar.m";
 
-TB_FONT: con "/fonts/vera/verabd/verabd.14.font";
+TB_FONT: con "/fonts/vera/verabd/verabd.16.font";
 
 title_cfg := array[] of {
 	"frame .Wm_t -bg #e2e8f0 -borderwidth 0",

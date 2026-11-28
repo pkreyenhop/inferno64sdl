@@ -66,8 +66,8 @@ fontcache : array of ref Reffont;
 nfontcache : int;
 reffonts : array of ref Reffont;
 deffontnames := array[2] of {
-	"/fonts/vera/vera/vera.14.font",
-	"/fonts/vera/veramono/veramono.14.font",
+	"/fonts/vera/verabd/verabd.16.font",
+	"/fonts/vera/veramobd/veramobd.16.font",
 };
 
 command : ref Command;

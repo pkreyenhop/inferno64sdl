@@ -134,7 +134,7 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	}
 
 	if(font == nil){
-		font = "/fonts/vera/vera/vera.14.font";
+		font = "/fonts/vera/verabd/verabd.16.font";
 		f := env->getenv("font");
 		if(f != nil)
 			font = f;

@@ -64,7 +64,7 @@ shwin_cfg := array[] of {
 	"frame .b -bd 0 -bg #e2e8f0",
 	"frame .ft -bd 0 -bg #f8fafc",
 	"scrollbar .ft.scroll -command {send scroll t} -bd 0",
-	"text .ft.t -bd 0 -relief flat -yscrollcommand {send scroll s} -bg #f8fafc -fg #0f172a -selectforeground #0f172a -selectbackground #bfdbfe -font /fonts/vera/veramono/veramono.14.font",
+	"text .ft.t -bd 0 -relief flat -yscrollcommand {send scroll s} -bg #f8fafc -fg #0f172a -selectforeground #0f172a -selectbackground #bfdbfe -font /fonts/vera/veramobd/veramobd.16.font",
 	".ft.t tag configure sel -relief flat",
 	"pack .ft.scroll -side left -fill y",
 	"pack .ft.t -fill both -expand 1",

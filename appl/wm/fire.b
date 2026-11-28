@@ -20,9 +20,9 @@ MNT: con "/mnt/sheet";
 ADDR_FILE: con "/tmp/sheet.addr";
 DEF_ADDR: con "tcp!127.0.0.1!19900";
 
-FONT_UI:   con "/fonts/vera/verabd/verabd.14.font";
-FONT_BIG:  con "/fonts/vera/verabd/verabd.18.font";
-FONT_MONO: con "/fonts/vera/veramono/veramono.14.font";
+FONT_UI:   con "/fonts/vera/verabd/verabd.16.font";
+FONT_BIG:  con "/fonts/vera/verabd/verabd.20.font";
+FONT_MONO: con "/fonts/vera/veramobd/veramobd.16.font";
 
 # Original values captured on connect for Reset
 orig_growth := 10.0;
