@@ -35,6 +35,7 @@ Inferno represents services, devices, network interfaces, and application state 
   - **Restart** and **Exit** options in the starter menu for in-place restarts and clean shutdown (`echo halt > /dev/sysctl`)
 
 ### Builtin Modules & Included Applications
+See [APPS.md](APPS.md) for the complete catalog of all 40+ included sample apps, `!App` bundles, utilities, and games.
 - **NetSurf 3.11 Web Browser (`$NetSurf` / `wm/netsurf`)**:
   - Embedded NetSurf 3.11 framebuffer engine (`libnetsurf.a`) with HTML5, CSS, Duktape JavaScript, PNG/JPEG/GIF/BMP/SVG, and native HTTPS via `libcurl`.
   - Accessible from the starter menu (**NetSurf**) or via `wm/netsurf [url]`.
