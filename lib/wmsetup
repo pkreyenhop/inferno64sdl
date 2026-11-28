@@ -36,7 +36,19 @@ fn wmapp {
 		pctl newpgrp
 		fn wmapp
 		fn wmrun
+		fn wmrestore
 		/lib/wmapp $args
+	} > /chan/wmstdout >[2] /chan/wmstderr &
+}
+
+fn wmrestore {
+	geom := $1
+	cmd := ${tl $*}
+	{
+		pctl newpgrp
+		pctl forkenv
+		wmgeom = $geom
+		$cmd
 	} > /chan/wmstdout >[2] /chan/wmstderr &
 }
 
@@ -49,8 +61,8 @@ fn cd {
 
 plumber -v /lib/plumbing >/chan/wmstdout >[2=1]
 wmrun wm/pinboard
-if {ftest -f $home/lib/wmsession} {
-	run $home/lib/wmsession
+if {ftest -f /usr/inferno/lib/wmsession} {
+	run /usr/inferno/lib/wmsession
 } {
 	wmapp /Apps/!Acme
 	wmapp /Apps/!Shell

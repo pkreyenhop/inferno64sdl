@@ -235,6 +235,8 @@ Window.onscreen(w: self ref Window, how: string)
 		g := e->getenv("wmgeom");
 		if(g != nil && g != ""){
 			e->setenv("wmgeom", "");
+			if(len g >= 2 && g[0] == '\'' && g[len g - 1] == '\'')
+				g = g[1:len g - 1];
 			(gr, nil) := s2r(g, 0);
 			if(gr.dx() >= 100 && gr.dy() >= 80)
 				w.r = gr;

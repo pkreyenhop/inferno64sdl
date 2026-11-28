@@ -98,6 +98,8 @@ onscreen(top: ref Tk->Toplevel, how: string)
 		g := e->getenv("wmgeom");
 		if(g != nil && g != ""){
 			e->setenv("wmgeom", "");
+			if(len g >= 2 && g[0] == '\'' && g[len g - 1] == '\'')
+				g = g[1:len g - 1];
 			wmctl(top, sys->sprint("!reshape . -1 %s onscreen", g));
 			return;
 		}

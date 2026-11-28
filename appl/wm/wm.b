@@ -50,7 +50,7 @@ AppInfo: adt {
 	hasr: int;
 };
 appinfos: list of ref AppInfo;
-startms := 0;
+sessionready := 0;
 sessionpath := "";
 
 badmodule(p: string)
@@ -85,7 +85,6 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	winplace->init();
 
 	sys->pctl(Sys->NEWPGRP|Sys->FORKNS, nil);
-	startms = sys->millisec();
 	sessionpath = getsesspath();
 	if (ctxt == nil)
 		ctxt = wmclient->makedrawcontext();
@@ -122,7 +121,12 @@ init(ctxt: ref Draw->Context, argv: list of string)
 		fatal("cannot run command: " + e);
 
 	fakekbd = chan of string;
+	savec := chan of int;
+	spawn delayedsave(savec);
 	for(;;) alt {
+	<-savec =>
+		sessionready = 1;
+		savesession();
 	c := <-win.ctl or
 	c = <-wmctxt.ctl =>
 		# XXX could implement "pleaseexit" in order that
@@ -624,20 +628,7 @@ togglemaxwin(c: ref Client, w: ref Window): string
 
 getsesspath(): string
 {
-	user := "inferno";
-	fd := sys->open("/dev/user", Sys->OREAD);
-	if(fd != nil){
-		buf := array[64] of byte;
-		n := sys->read(fd, buf, len buf);
-		if(n > 0){
-			u := string buf[0:n];
-			while(len u > 0 && (u[len u - 1] == '\n' || u[len u - 1] == ' '))
-				u = u[0:len u - 1];
-			if(len u > 0)
-				user = u;
-		}
-	}
-	return "/usr/" + user + "/lib/wmsession";
+	return "/usr/inferno/lib/wmsession";
 }
 
 findappinfo(cid: int): ref AppInfo
@@ -650,6 +641,9 @@ findappinfo(cid: int): ref AppInfo
 
 setappcmd(cid: int, cmd: string)
 {
+	# Strip outer single-quotes that Inferno sh adds when serializing env vars with spaces
+	if(len cmd >= 2 && cmd[0] == '\'' && cmd[len cmd - 1] == '\'')
+		cmd = cmd[1:len cmd - 1];
 	ai := findappinfo(cid);
 	if(ai != nil){
 		ai.cmd = cmd;
@@ -688,11 +682,15 @@ updateapprect(cid: int, r: Rect): int
 	return 1;
 }
 
+delayedsave(c: chan of int)
+{
+	sys->sleep(2500);
+	c <-= 1;
+}
+
 savesession()
 {
-	if(sessionpath == nil || sessionpath == "")
-		return;
-	if(sys->millisec() - startms < 3000)
+	if(!sessionready || sessionpath == nil || sessionpath == "")
 		return;
 	# Collect tracked clients in bottom-to-top z-order so restore preserves stacking
 	ordered: list of ref AppInfo;
@@ -709,8 +707,11 @@ savesession()
 			break;
 		}
 	}
-	if(slash > 0)
-		sys->create(sessionpath[0:slash], Sys->OREAD, Sys->DMDIR | 8r755);
+	if(slash > 0){
+		dir := sessionpath[0:slash];
+		if(sys->stat(dir).t0 < 0)
+			sys->create(dir, Sys->OREAD, Sys->DMDIR | 8r755);
+	}
 
 	fd := sys->create(sessionpath, Sys->OWRITE, 8r644);
 	if(fd == nil)
@@ -718,7 +719,7 @@ savesession()
 	out := "# Saved Inferno desktop session\n";
 	for(l := ordered; l != nil; l = tl l){
 		ai := hd l;
-		out += sys->sprint("{pctl forkenv; wmgeom='%s'; %s}\n", r2s(ai.r), ai.cmd);
+		out += sys->sprint("wmrestore '%s' %s\n", r2s(ai.r), ai.cmd);
 	}
 	b := array of byte out;
 	sys->write(fd, b, len b);
