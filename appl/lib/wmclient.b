@@ -161,6 +161,7 @@ putimage(w: ref Window, i: ref Image)
 	if(w.titlebar != nil){
 		w.tbrect = Rect(ir.min, (ir.max.x, ir.min.y + w.tbsize.y));
 		tbimage := w.screen.newwindow(w.tbrect, Draw->Refnone, Draw->Nofill);
+		w.titlebar.image = tbimage;
 		tk->putimage(w.titlebar, ".", tbimage, nil);
 		ir.min.y = w.tbrect.max.y;
 	}
