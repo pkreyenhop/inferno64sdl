@@ -1,4 +1,5 @@
 #!/dis/sh.dis
+load std
 if {ftest -f /tmp/sheet.addr} {
 	mount -A `{cat /tmp/sheet.addr} /mnt/sheet >[2]/dev/null
 } {
