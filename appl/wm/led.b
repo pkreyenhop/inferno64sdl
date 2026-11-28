@@ -579,16 +579,10 @@ save_current(): int
 	return 1;
 }
 
-update_title(win: ref Window)
+update_title(nil: ref Window)
 {
-	if(curtab >= 0){
-		b := tabs[curtab];
-		m := "";
-		if(b.dirty)
-			m = " *";
-		win.settitle("Led - " + b.path + m);
-	} else
-		win.settitle("Led");
+	# Keep the initial wmclient titlebar intact (filename & modified state
+	# are shown in the tab bar and status bar).
 }
 
 # --- Limbo Compiler Integration ---
@@ -1275,7 +1269,7 @@ draw_statusbar(img: ref Image, w, h: int)
 	}
 	img.text((14, h - STAT_H + 6), c_ink, (0, 0), f_ui, left);
 
-	right := build_msg + "   |   Ctrl+S Save   Ctrl+B Compile   Ctrl+O Output";
+	right := build_msg + "   |   Ctrl+S Save   Ctrl+B Compile   Ctrl+O Output   Ctrl+Q Quit";
 	rw := f_ui.width(right);
 	if(rw + 24 < w - f_ui.width(left) - 40)
 		img.text((w - rw - 14, h - STAT_H + 6), c_muted, (0, 0), f_ui, right);
@@ -1685,6 +1679,9 @@ handle_key(win: ref Window, k: int, compc: chan of (int, string, array of ref Di
 	was_dirty := b.dirty;
 
 	case k {
+	16r11 =>	# Ctrl+Q: Quit
+		win.wmctl("exit");
+		exit;
 	16r13 =>	# Ctrl+S: Save
 		save_current();
 		update_title(win);
