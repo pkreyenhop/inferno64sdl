@@ -130,6 +130,12 @@ init(ctxt: ref Draw->Context, argv: list of string)
 				if((c.flags & Sticky) == 0)
 					c.ctl <-= "raise";
 				setfocus(win, c);
+				if(p.buttons == 1 && (c.flags & (Sticky | Controller)) == 0){
+					if(trycornerresize(wmctxt.ptr, c, p)){
+						buttons = 0;
+						break;
+					}
+				}
 			}
 		}
 		if(ptrfocus != nil && (ptrfocus.flags & Ptrstarted) != 0){
@@ -458,6 +464,61 @@ dragwin(ptr: chan of ref Pointer, c: ref Client, w: ref Window, off: Point): str
 	return nil;
 }
 
+trycornerresize(ptrc: chan of ref Pointer, c: ref Client, p: ref Pointer): int
+{
+	w: ref Window;
+	for(wl := c.wins; wl != nil; wl = tl wl){
+		tw := hd wl;
+		if(p.xy.in(tw.r) && tw.r.dx() >= 120 && tw.r.dy() >= 80){
+			w = tw;
+			break;
+		}
+	}
+	if(w == nil)
+		return 0;
+
+	r := w.r;
+	x := p.xy.x;
+	y := p.xy.y;
+	CORNER: con 14;
+	EDGE: con 5;
+
+	move := 0;
+	# Bottom-right & bottom-left corners: generous 14x14 px grab zones
+	if(x >= r.max.x - CORNER && y >= r.max.y - CORNER)
+		move = Maxx | Maxy;
+	else if(x < r.min.x + CORNER && y >= r.max.y - CORNER)
+		move = Minx | Maxy;
+	else if(x < r.min.x + CORNER && y < r.min.y + CORNER)
+		move = Minx | Miny;
+	else if(x >= r.max.x - EDGE && y < r.min.y + EDGE)
+		move = Maxx | Miny;
+	else if(x < r.min.x + EDGE)
+		move = Minx;
+	else if(x >= r.max.x - EDGE && y >= r.min.y + 34)
+		move = Maxx;
+	else if(y >= r.max.y - EDGE)
+		move = Maxy;
+
+	if(move == 0)
+		return 0;
+
+	offset := Point(0, 0);
+	if(move & Minx) offset.x = x - r.min.x;
+	else if(move & Maxx) offset.x = x - r.max.x;
+	if(move & Miny) offset.y = y - r.min.y;
+	else if(move & Maxy) offset.y = y - r.max.y;
+
+	borders := array[4] of ref Image;
+	show := Minx | Miny | Maxx | Maxy;
+	showborders(borders, r, show);
+	screen.image.flush(Draw->Flushnow);
+	nr := sweep(ptrc, r, offset, borders, move, show, Point(180, 120));
+	if(!nr.eq(r))
+		reshape(c, w.tag, nr);
+	return 1;
+}
+
 sizewin(ptrc: chan of ref Pointer, c: ref Client, w: ref Window, minsize: Point): string
 {
 	borders := array[4] of ref Image;
@@ -572,7 +633,7 @@ showborder(b: ref Image, show: int, r: Rect): ref Image
 	if(b != nil && b.r.size().eq(r.size()))
 		b.origin(r.min, r.min);
 	else
-		b = screen.newwindow(r, Draw->Refbackup, Draw->Red);
+		b = screen.newwindow(r, Draw->Refbackup, int 16r2563ebff);
 	return b;
 }
 
