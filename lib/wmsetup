@@ -69,6 +69,7 @@ if {ftest -f /usr/inferno/lib/wmsession} {
 }
 menu Shell			{wmapp /Apps/!Shell}
 menu Acme			{wmapp /Apps/!Acme}
+menu Led			{wmapp /Apps/!Led}
 menu Edit			{wmapp /Apps/!Edit}
 menu Charon			{wmapp /Apps/!Web}
 menu NetSurf			{wmrun wm/netsurf}

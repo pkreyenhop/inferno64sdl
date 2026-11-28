@@ -27,6 +27,7 @@
 
 | App | Launch | Source | Description |
 | :--- | :--- | :--- | :--- |
+| **Led (`wm/led`)** | Start → **Led**, `wmapp /Apps/!Led`, or `wm/led [file\|dir]` | `appl/wm/led.b` | Lightweight Zed-inspired Limbo IDE with directory tree sidebar, multi-tab editing, Limbo syntax highlighting, auto-indent, clipboard (`Cmd/Alt+C/V/X`), and integrated `/dis/limbo.dis` compilation (`Ctrl+B`) with clickable error diagnostics. |
 | **Sheet (`wm/sheet`)** | Start → **Sheet**, `wmapp /Apps/!Sheet`, or `wm/sheet [file.ods\|file.s9]` | `appl/wm/sheet.b` | Native Limbo OpenDocument Spreadsheet (`.ods`) and `.s9` viewer/evaluator with multi-sheet tabs, formula engine, incremental scroll blitting, and a live **9P/Styx filesystem at `/mnt/sheet`** (`-s` headless server, `-t` CLI self-test). See [SHEET.md](SHEET.md). |
 | **FIRE Scenario Explorer (`wm/fire`)** | Start → **FIRE**, `wmapp /Apps/!Fire`, or `wm/fire` | `appl/wm/fire.b` | Interactive Limbo/Tk client that drives `wm/sheet` live over 9P/Styx (`/tmp/sheet.addr` → `/mnt/sheet`) with real-time sliders (Stock Growth, Inflation, Withdrawal Rate, Annual Spending), presets, live outcome readouts, and spending/growth/withdrawal sensitivity sweeps. |
 | **NetSurf 3.11 (`wm/netsurf`)** | Start → **NetSurf**, or `wm/netsurf [url]` | `appl/wm/netsurf.b`, `libinterp/netsurf.c` | Embedded NetSurf 3.11 web browser (`$NetSurf` builtin) supporting HTML5, CSS, Duktape JavaScript, PNG/JPEG/GIF/BMP/SVG, and native HTTPS via `libcurl`. |
