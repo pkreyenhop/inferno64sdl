@@ -134,7 +134,7 @@ init(ctxt: ref Draw->Context, argv: list of string)
 	}
 
 	if(font == nil){
-		font = "/fonts/misc/latin1.6x13.font";
+		font = "/fonts/vera/vera/vera.14.font";
 		f := env->getenv("font");
 		if(f != nil)
 			font = f;
@@ -277,7 +277,7 @@ handlerequest(clientid: string, args: list of string): string
 iconify(id, label, iconpath: string)
 {
 	label = condenselabel(label);
-	e := tk->cmd(tbtop, "button .toolbar." +id+" -relief sunken -height 32 -command {send task "+id+"} -takefocus 0 ");
+	e := tk->cmd(tbtop, "button .toolbar." +id+" -relief flat -bd 0 -bg #e2e8f0 -fg #0f172a -activebackground #cbd5e1 -height 30 -padx 10 -command {send task "+id+"} -takefocus 0 ");
 	# When an icon path was supplied (via tkclient->seticon / $wmicon) and
 	# the bitmap registers cleanly, display it instead of the label text.
 	name := "";
@@ -333,15 +333,15 @@ deiconify(id: string)
 layout(top: ref Tk->Toplevel)
 {
 	r := top.screenr;
-	h := 64;
+	h := 48;
 	if(r.dy() < 480)
 		h = tk->rect(top, ".b", Tk->Border|Tk->Required).dy();
-	cmd(top, ". configure -x " + string (r.min.x + 8) +
+	cmd(top, ". configure -x " + string (r.min.x) +
 			font +
 			" -y " + string (r.max.y - h) +
-			" -width " + string (r.dx()-16) +
+			" -width " + string (r.dx()) +
 			" -height " + string h + 
-			" -bd 1 -relief flat -bg black");
+			" -bd 1 -relief flat -bg #cbd5e1");
 	cmd(top, "update");
 	tkclient->onscreen(tbtop, "exact");
 }
@@ -357,19 +357,13 @@ toolbar(ctxt: ref Draw->Context, startmenu: int,
 
 	tk->namechan(tbtop, exec, "exec");
 	tk->namechan(tbtop, task, "task");
-	cmd(tbtop, "frame .toolbar -height 64");
+	cmd(tbtop, "frame .toolbar -height 46 -bg #f8fafc");
 	if (startmenu) {
-		cmd(tbtop, "menubutton .toolbar.start -relief flat -menu .m -borderwidth 5 -height 60 -bitmap " + icon);
-		cmd(tbtop, "pack .toolbar.start -side left -fill y -padx 10");
-
-	#	cmd(tbtop, "button .toolbar.home -relief flat -borderwidth 5 -height 60 -bitmap newhome.bit -command {send exec {wmrun wm/filer $home}}");
-	#	cmd(tbtop, "pack .toolbar.home -side right -fill y -padx 10");
-
-	#	cmd(tbtop, "button .toolbar.find -relief flat -borderwidth 5 -height 60 -bitmap find.bit -command {send exec {wmrun wm/man}}");
-	#	cmd(tbtop, "pack .toolbar.find -side right -fill y ");
+		cmd(tbtop, "menubutton .toolbar.start -text {Inferno} -font /fonts/vera/verabd/verabd.16.font -bg #0f172a -fg white -activebackground #1e293b -activeforeground white -relief flat -bd 0 -padx 18 -pady 8 -menu .m");
+		cmd(tbtop, "pack .toolbar.start -side left -padx 10 -pady 6");
 	}
 	cmd(tbtop, "pack .toolbar -fill both");
-	cmd(tbtop, "menu .m");
+	cmd(tbtop, "menu .m -bg white -fg #0f172a -activebackground #2563eb -activeforeground white -bd 1");
 	return tbtop;
 }
 

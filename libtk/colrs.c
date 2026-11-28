@@ -6,17 +6,18 @@
 
 enum
 {
-	tkBackR		= 0xdd,		/* Background base color */
-	tkBackG 	= 0xdd,
-	tkBackB 	= 0xdd,
+	/* Clean Light Minimal palette */
+	tkBackR		= 0xf1,		/* Background base color (#f1f5f9) */
+	tkBackG 	= 0xf5,
+	tkBackB 	= 0xf9,
 
-	tkSelectR	= 0xb0,		/* Check box selected color */
-	tkSelectG	= 0x30,
-	tkSelectB	= 0x60,
+	tkSelectR	= 0x25,		/* Check box / radio selected (#2563eb) */
+	tkSelectG	= 0x63,
+	tkSelectB	= 0xeb,
 
-	tkSelectbgndR	= 0x40,		/* Selected item background */
-	tkSelectbgndG	= 0x40,
-	tkSelectbgndB	= 0x40
+	tkSelectbgndR	= 0x25,		/* Selected item / menu highlight (#2563eb) */
+	tkSelectbgndG	= 0x63,
+	tkSelectbgndB	= 0xeb
 };
 
 typedef struct Coltab Coltab;
@@ -32,25 +33,25 @@ static Coltab coltab[] =
 		RGB(tkBackR, tkBackG, tkBackB),
 		TkSameshade,
 	TkCbackgndlght,
-		RGB(tkBackR, tkBackG, tkBackB),
-		TkLightshade,
+		RGB(0xcb, 0xd5, 0xe1),
+		TkSameshade,
 	TkCbackgnddark,
-		RGB(tkBackR, tkBackG, tkBackB),
-		TkDarkshade,
+		RGB(0x94, 0xa3, 0xb8),
+		TkSameshade,
 	TkCactivebgnd,
-		RGB(tkBackR+0x10, tkBackG+0x10, tkBackB+0x10),
+		RGB(0xe2, 0xe8, 0xf0),
 		TkSameshade,
 	TkCactivebgndlght,
-		RGB(tkBackR+0x10, tkBackG+0x10, tkBackB+0x10),
-		TkLightshade,
+		RGB(0xcb, 0xd5, 0xe1),
+		TkSameshade,
 	TkCactivebgnddark,
-		RGB(tkBackR+0x10, tkBackG+0x10, tkBackB+0x10),
-		TkDarkshade,
+		RGB(0x94, 0xa3, 0xb8),
+		TkSameshade,
 	TkCactivefgnd,
-		RGB(0, 0, 0),
+		RGB(0x0f, 0x17, 0x2a),
 		TkSameshade,
 	TkCforegnd,
-		RGB(0, 0, 0),
+		RGB(0x0f, 0x17, 0x2a),
 		TkSameshade,
 	TkCselect,
 		RGB(tkSelectR, tkSelectG, tkSelectB),
@@ -59,19 +60,19 @@ static Coltab coltab[] =
 		RGB(tkSelectbgndR, tkSelectbgndG, tkSelectbgndB),
 		TkSameshade,
 	TkCselectbgndlght,
-		RGB(tkSelectbgndR, tkSelectbgndG, tkSelectbgndB),
-		TkLightshade,
+		RGB(0x3b, 0x82, 0xf6),
+		TkSameshade,
 	TkCselectbgnddark,
-		RGB(tkSelectbgndR, tkSelectbgndG, tkSelectbgndB),
-		TkDarkshade,
+		RGB(0x1d, 0x4e, 0xd8),
+		TkSameshade,
 	TkCselectfgnd,
 		RGB(0xff, 0xff, 0xff),
 		TkSameshade,
 	TkCdisablefgnd,
-		RGB(0x88, 0x88, 0x88),
+		RGB(0x94, 0xa3, 0xb8),
 		TkSameshade,
 	TkChighlightfgnd,
-		RGB(0, 0, 0),
+		RGB(0x25, 0x63, 0xeb),
 		TkSameshade,
 	TkCtransparent,
 		DTransparent,

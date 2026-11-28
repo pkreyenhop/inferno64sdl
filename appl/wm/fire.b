@@ -204,10 +204,8 @@ color_for_outcome(s: string): string
 refresh_outputs(top: ref Tk->Toplevel)
 {
 	if(!connected){
-		msg := "Not connected to /mnt/sheet — launch Sheet, then click Connect";
-		if(len last_err > 0)
-			msg = "Not connected (" + last_err + ") — click Connect";
-		cmd(top, ".st configure -text {" + msg + "} -fg #b3261e");
+		msg := "Not connected — open Sheet, then click Connect";
+		cmd(top, ".st configure -text {" + msg + "} -fg #b91c1c");
 		cmd(top, "update");
 		return;
 	}
@@ -354,10 +352,10 @@ run_sweep_wr(top: ref Tk->Toplevel)
 }
 
 tkcfg := array[] of {
-	"frame .hdr -bg #1e293b -bd 6",
-	"label .hdr.t -text {FIRE Scenario Explorer} -bg #1e293b -fg white -font " + FONT_BIG,
+	"frame .hdr -bg #f8fafc -bd 6",
+	"label .hdr.t -text {FIRE Scenario Explorer} -bg #f8fafc -fg #0f172a -font " + FONT_BIG,
 	"pack .hdr.t -side left -padx 6",
-	"button .hdr.conn -text {Connect} -font " + FONT_UI + " -command {send cmd connect}",
+	"button .hdr.conn -text {Connect} -bg #f1f5f9 -fg #0f172a -font " + FONT_UI + " -command {send cmd connect}",
 	"pack .hdr.conn -side right -padx 4",
 	"pack .hdr -fill x",
 
@@ -381,28 +379,28 @@ tkcfg := array[] of {
 
 	"frame .in.g -bg white",
 	"label .in.g.l -text {Stock Growth} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.g.s -orient horizontal -from 8 -to 28 -showvalue 0 -length 340 -command {send cmd sg}",
+	"scale .in.g.s -orient horizontal -from 8 -to 28 -showvalue 0 -length 280 -command {send cmd sg}",
 	"label .in.g.v -text {10%} -width 95 -anchor e -bg white -font " + FONT_UI,
 	"pack .in.g.l .in.g.s .in.g.v -side left -padx 6 -pady 4",
 	"pack .in.g -fill x",
 
 	"frame .in.i -bg white",
 	"label .in.i.l -text {Inflation} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.i.s -orient horizontal -from 2 -to 14 -showvalue 0 -length 340 -command {send cmd si}",
+	"scale .in.i.s -orient horizontal -from 2 -to 14 -showvalue 0 -length 280 -command {send cmd si}",
 	"label .in.i.v -text {3%} -width 95 -anchor e -bg white -font " + FONT_UI,
 	"pack .in.i.l .in.i.s .in.i.v -side left -padx 6 -pady 4",
 	"pack .in.i -fill x",
 
 	"frame .in.w -bg white",
 	"label .in.w.l -text {Withdrawal Rate} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.w.s -orient horizontal -from 10 -to 24 -showvalue 0 -length 340 -command {send cmd sw}",
+	"scale .in.w.s -orient horizontal -from 10 -to 24 -showvalue 0 -length 280 -command {send cmd sw}",
 	"label .in.w.v -text {4%} -width 95 -anchor e -bg white -font " + FONT_UI,
 	"pack .in.w.l .in.w.s .in.w.v -side left -padx 6 -pady 4",
 	"pack .in.w -fill x",
 
 	"frame .in.sp -bg white",
 	"label .in.sp.l -text {Annual Spending} -width 155 -anchor w -bg white -font " + FONT_UI,
-	"scale .in.sp.s -orient horizontal -from 12 -to 44 -showvalue 0 -length 340 -command {send cmd ssp}",
+	"scale .in.sp.s -orient horizontal -from 12 -to 44 -showvalue 0 -length 280 -command {send cmd ssp}",
 	"label .in.sp.v -text {$120,000} -width 95 -anchor e -bg white -font " + FONT_UI,
 	"pack .in.sp.l .in.sp.s .in.sp.v -side left -padx 6 -pady 4",
 	"pack .in.sp -fill x",

@@ -308,9 +308,12 @@ tkscalehoriz(Tk *tk, Image *i)
 	h = Dy(sr);
 	sl = tks->sl + 2*ScaleBW;
 
-	l = tkgc(e, TkCbackgndlght);
-	d = tkgc(e, TkCbackgnddark);
-	tkbevel(i, r.min, w, h, ScaleBW, d, l);
+	/* Modern flat slim track centered vertically */
+	{
+		int cy = (sr.min.y + sr.max.y) / 2;
+		Rectangle tr = Rect(sr.min.x, cy - 3, sr.max.x, cy + 3);
+		draw(i, tr, tkgc(e, TkCbackgndlght), nil, ZP);
+	}
 
 	tks->pixmin = sr.min.x;
 	tks->pixmax = sr.max.x;
@@ -346,27 +349,21 @@ tkscalehoriz(Tk *tk, Image *i)
 	p.y = sr.min.y;
 	q = p;
 	q.x += tks->sl/2 + 1;
-	if(ScaleBW > 1) {
-		gh = sh;
-		q.y++;
-	} else
-		gh = sh-1;
-	if(tk->flag & Tkactivated) {
-		r2.min = p;
-		r2.max.x = p.x+sl;
-		r2.max.y = sr.max.y;
-		draw(i, r2, tkgc(e, TkCactivebgnd), nil, ZP);
+
+	/* Royal-blue filled progress bar left of thumb + crisp white/blue thumb */
+	{
+		int cy = (sr.min.y + sr.max.y) / 2;
+		int tx = p.x + sl/2;
+		Rectangle fillr = Rect(sr.min.x, cy - 3, tx, cy + 3);
+		Rectangle thumbr = Rect(tx - 8, cy - 8, tx + 8, cy + 8);
+		if(fillr.max.x > fillr.min.x)
+			draw(i, fillr, tkgc(e, TkCselectbgnd), nil, ZP);
+		draw(i, thumbr, e->top->display->white, nil, ZP);
+		border(i, thumbr, 2, tkgc(e, TkCselectbgnd), ZP);
 	}
-	switch(tks->relief) {
-	case TKsunken:
-		tkbevel(i, p, tks->sl, sh, ScaleBW, d, l);
-		tkbevel(i, q, 0, gh, 1, l, d);
-		break;
-	case TKraised:
-		tkbevel(i, p, tks->sl, sh, ScaleBW, l, d);
-		tkbevel(i, q, 0, gh, 1, d, l);
-		break;
-	}
+	USED(d);
+	USED(l);
+	USED(gh);
 	tks->pixpos = p.x;
 	tks->center = p.y + sh/2 + ScaleBW;
 

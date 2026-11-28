@@ -840,8 +840,8 @@ void
 tkdrawrelief(Image *i, Tk *tk, Point o, int color, int rlf)
 {
 	TkEnv *e;
-	Image *l, *d, *t;
-	int h, w, bd, bd1, bd2;
+	Image *l, *d;
+	int h, w;
 
 	if(tk->borderwidth == 0)
 		return;
@@ -857,31 +857,21 @@ tkdrawrelief(Image *i, Tk *tk, Point o, int color, int rlf)
 		l = tkgshade(e, color, TkLightshade);
 		d = tkgshade(e, color, TkDarkshade);
 	}
-	bd = tk->borderwidth;
 	if(rlf < 0)
 		rlf = TKraised;
+	/* Clean Light Minimal: crisp 1px flat hairline borders instead of 3D bevels */
 	switch(rlf) {
 	case TKflat:
 		break;
 	case TKsunken:
-		tkbevel(i, o, w, h, bd, d, l);
-		break;	
+		tkbevel(i, o, w, h, 1, d, d);
+		break;
 	case TKraised:
-		tkbevel(i, o, w, h, bd, l, d);
-		break;	
+		tkbevel(i, o, w, h, 1, d, d);
+		break;
 	case TKgroove:
-		t = d;
-		d = l;
-		l = t;
-		/* fall through */
 	case TKridge:
-		bd1 = bd/2;
-		bd2 = bd - bd1;
-		if(bd1 > 0)
-			tkbevel(i, o, w + 2*bd2, h + 2*bd2, bd1, l, d);
-		o.x += bd1;
-		o.y += bd1;
-		tkbevel(i, o, w, h, bd2, d, l);
+		tkbevel(i, o, w, h, 1, l, l);
 		break;
 	}
 }

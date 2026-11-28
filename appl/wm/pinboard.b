@@ -70,8 +70,8 @@ SlotPad:  con 20;	# leave a margin around the screen edge
 
 # Inferno Tk only recognises a small fixed set of colour names; use
 # hex literals to avoid depending on additions to that table.
-Bgcolor:  con "#5b7d8a";	# muted desktop teal
-Selcolor: con "#ffcc00";	# yellow selection outline (Inferno-like)
+Bgcolor:  con "#dbe4ee";	# Clean Light Minimal slate backdrop
+Selcolor: con "#2563eb";	# royal blue selection outline
 
 Pin: adt
 {
