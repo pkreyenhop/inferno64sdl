@@ -5,6 +5,7 @@ prompt='% ' ''
 fn % {$*}
 autoload=std
 home=/usr/^"{cat /dev/user}
+font=/fonts/vera/vera/vera.14.font
 
 if {! {~ wm ${loaded}}} {
 	echo wmsetup must run under wm >[1=2]

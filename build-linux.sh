@@ -90,6 +90,7 @@ if [ "$DIS_ONLY" -eq 1 ]; then
     (cd "$ROOT/appl/acme" && mk install)
 else
     echo "==> Creating build directories and building full Inferno tree (Linux/$objtype)..."
+    rm -f "$ROOT/emu/Linux/o.emu"
     (cd "$ROOT" && mk mkdirs && mk install)
 fi
 

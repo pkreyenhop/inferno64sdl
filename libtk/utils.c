@@ -486,7 +486,7 @@ tkdefaultenv(TkTop *t)
 	env->top = t;
 
 	if(tkfont == nil)
-		tkfont = "/fonts/pelm/unicode.8.font";
+		tkfont = "/fonts/vera/vera/vera.14.font";
 
 	d = t->display;
 	env->font = font_open(d, tkfont);

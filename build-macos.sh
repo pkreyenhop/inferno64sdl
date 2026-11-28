@@ -88,9 +88,11 @@ if [ "$DIS_ONLY" -eq 1 ]; then
     (cd "$ROOT/appl/acme" && mk ROOT="$ROOT" SYSHOST=MacOSX OBJTYPE="$objtype" install)
 elif [ "$EMU_ONLY" -eq 1 ]; then
     echo "==> Rebuilding emu/MacOSX..."
+    rm -f "$ROOT/emu/MacOSX/o.emu"
     (cd "$ROOT/emu/MacOSX" && mk ROOT="$ROOT" SYSHOST=MacOSX OBJTYPE="$objtype" install)
 else
     echo "==> Creating build directories and building full Inferno tree (MacOSX/$objtype)..."
+    rm -f "$ROOT/emu/MacOSX/o.emu"
     (cd "$ROOT" && mk mkdirs && mk install)
 fi
 
