@@ -514,8 +514,10 @@ trycornerresize(ptrc: chan of ref Pointer, c: ref Client, p: ref Pointer): int
 	showborders(borders, r, show);
 	screen.image.flush(Draw->Flushnow);
 	nr := sweep(ptrc, r, offset, borders, move, show, Point(180, 120));
+	borders = nil;
+	screen.image.flush(Draw->Flushnow);
 	if(!nr.eq(r))
-		reshape(c, w.tag, nr);
+		c.ctl <-= sys->sprint("!reshape %q -1 %s", w.tag, r2s(nr));
 	return 1;
 }
 
@@ -550,7 +552,10 @@ sizewin(ptrc: chan of ref Pointer, c: ref Client, w: ref Window, minsize: Point)
 			offset.y = xy.y - r.max.y;
 		}
 	}
-	return reshape(c, w.tag, sweep(ptrc, r, offset, borders, move, show, minsize));
+	nr := sweep(ptrc, r, offset, borders, move, show, minsize);
+	borders = nil;
+	screen.image.flush(Draw->Flushnow);
+	return reshape(c, w.tag, nr);
 }
 
 reshape(c: ref Client, tag: string, r: Rect): string
